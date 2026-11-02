@@ -1,0 +1,63 @@
+:root {
+  color-scheme: light dark;
+
+  /* Palette — warm-neutral shell, white content panel, ink type; clay is the single accent */
+  --c-shell: #f5f4f1;
+  --c-bg: #ffffff;
+  --c-surface: #ffffff; /* used by the illustrations */
+  --c-surface-2: #f4f2ee;
+  --c-hover: #faf9f7;
+  --c-sand: #e3d8c9;
+  --c-ink: #292b26;
+  --c-muted: #66655e;
+  --c-clay: #a58b70;
+  --c-clay-text: #85694f;
+  --c-sage: #68705c;
+  --c-border: #e8e4dd;
+  --c-border-strong: #d2cbbf;
+  --c-on-ink: #ffffff;
+  --c-tint-warm: #f8f5ef; /* illustration backdrops */
+
+  /* Type */
+  --f-display: 'Manrope', system-ui, sans-serif;
+  --f-body: 'DM Sans', system-ui, sans-serif;
+
+  --t-title: clamp(1.875rem, 1.5rem + 1.6vw, 2.5rem);
+  --t-section: 1.25rem;
+  --t-body: 1rem;
+  --t-small: 0.875rem;
+  --t-xs: 0.75rem;
+
+  /* Layout */
+  --sidebar-w: 15rem;
+  --measure: 46rem;
+  --section: clamp(3.5rem, 2.5rem + 3vw, 5rem);
+
+  --r-sm: 6px;
+  --r-md: 10px;
+  --r-lg: 16px;
+
+  --shadow-chip: 0 1px 2px rgba(41, 43, 38, 0.06), 0 6px 16px -6px rgba(41, 43, 38, 0.14);
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --c-shell: #161715;
+    --c-bg: #1d1e1b;
+    --c-surface: #22231f;
+    --c-surface-2: #282925;
+    --c-hover: #232421;
+    --c-sand: #4a4237;
+    --c-ink: #ece8e1;
+    --c-muted: #a9a59b;
+    --c-clay: #c2a586;
+    --c-clay-text: #c9ad8f;
+    --c-sage: #a4ad95;
+    --c-border: #31322e;
+    --c-border-strong: #45463f;
+    --c-on-ink: #1d1e1b;
+    --c-tint-warm: #23221e;
+    --shadow-chip: 0 1px 2px rgba(0, 0, 0, 0.4);
+  }
+}
