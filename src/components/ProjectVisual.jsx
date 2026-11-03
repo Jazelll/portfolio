@@ -5,7 +5,7 @@ import { FinanceCover } from './illustrations/FinanceIllustration'
 const ILLUSTRATIONS = { memoire: MemoireCover, finance: FinanceCover }
 
 // A project's cover: a real screenshot when one exists, otherwise its labelled illustration.
-export default function ProjectVisual({ project, sizes, priority, className = '' }) {
+export default function ProjectVisual({ project, sizes, priority, eager, className = '' }) {
   const { cover } = project
 
   if (cover.kind === 'illustration') {
@@ -19,7 +19,7 @@ export default function ProjectVisual({ project, sizes, priority, className = ''
 
   return (
     <div className={`project-visual ${className}`}>
-      <Img image={cover.image} alt={cover.alt} sizes={sizes} priority={priority} />
+      <Img image={cover.image} alt={cover.alt} sizes={sizes} priority={priority} eager={eager} />
     </div>
   )
 }

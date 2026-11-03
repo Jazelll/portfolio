@@ -1,0 +1,302 @@
+/* ================= Site canvas =================
+   Home, Work, About and Contact are regions of one board (see SiteCanvas).
+   Phones: the regions stack into one long page. From 768px the canvas fills the content area
+   (no page padding, no footer) with a control bar floating over it.
+   Region, frame and card positions arrive as --x / --y / --w / --h and only apply on the canvas. */
+
+.site-canvas {
+  max-width: var(--measure);
+  margin: 0 auto;
+  padding: clamp(56px, 9vw, 104px) 24px var(--section);
+}
+
+/* ---------- Regions (shared) ---------- */
+
+.ws-region { scroll-margin-top: 24px; }
+.ws-region__label {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+  font-size: var(--t-xs);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--c-muted);
+}
+.ws-region__num { color: var(--c-clay-text); font-variant-numeric: tabular-nums; }
+.ws-region .section { margin-top: 48px; }
+.ws-region .page-title { outline: none; }
+
+.ws-about { display: grid; gap: 48px; }
+.ws-about__side { display: grid; gap: 24px; align-content: start; }
+.ws-work__intro { margin-bottom: 40px; }
+
+/* ---------- Project card (shared) ---------- */
+
+.ws-card { animation: ws-in 0.7s var(--ease) backwards; animation-delay: calc(min(var(--i), 5) * 70ms + 50ms); }
+@keyframes ws-in { from { opacity: 0; transform: translateY(12px); } }
+
+.ws-card__link {
+  display: grid;
+  grid-template-areas: 'media' 'caption' 'peek';
+  gap: 12px;
+  color: inherit;
+  text-decoration: none;
+  border-radius: var(--r-md);
+}
+.ws-card__link:focus-visible { outline-offset: 6px; }
+
+.ws-card__media {
+  grid-area: media;
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--c-border);
+  border-radius: var(--r-md);
+  background: var(--c-surface-2);
+}
+.ws-card__media img { width: 100%; -webkit-user-drag: none; transition: transform 0.6s var(--ease); }
+.ws-card__media .ill { border-radius: 0; }
+
+.ws-card__chrome { display: flex; gap: 5px; padding: 8px 10px; border-bottom: 1px solid var(--c-border); background: var(--c-bg); }
+.ws-card__chrome span { width: 6px; height: 6px; border-radius: 50%; background: var(--c-border-strong); }
+
+.ws-card--plate .ws-card__media { padding: 12px; background: var(--c-tint-warm); }
+.ws-card--plate .ill { border-radius: var(--r-sm); }
+
+.ws-card__caption {
+  grid-area: caption;
+  display: grid;
+  grid-template-columns: 1.75rem 1fr;
+  row-gap: 2px;
+  align-items: baseline;
+}
+.ws-card__num { grid-row: span 2; font-size: var(--t-xs); font-weight: 600; color: var(--c-clay-text); font-variant-numeric: tabular-nums; }
+.ws-card__title { font-family: var(--f-display); font-weight: 700; font-size: 1.0625rem; letter-spacing: -0.02em; line-height: 1.25; }
+.ws-card__meta { font-size: var(--t-xs); color: var(--c-muted); }
+.ws-card--feature .ws-card__title { font-size: 1.375rem; letter-spacing: -0.03em; }
+
+.ws-card__peek { grid-area: peek; display: grid; gap: 6px; padding-left: 1.75rem; }
+.ws-card__summary { font-size: var(--t-small); line-height: 1.6; color: var(--c-muted); }
+.ws-card__role { font-size: var(--t-xs); line-height: 1.5; color: var(--c-muted); }
+.ws-card__role-label { margin-right: 4px; font-weight: 600; color: var(--c-ink); }
+.ws-card__open { font-size: var(--t-xs); font-weight: 600; color: var(--c-ink); }
+
+@media (hover: hover) {
+  .ws-card__link:hover .ws-card__media img { transform: scale(1.03); }
+}
+
+/* ---------- One long page (phones) ---------- */
+
+@media (max-width: 767.98px) {
+  .ws-board { display: grid; gap: calc(var(--section) * 1.2); transform: none !important; }
+  .ws-region--work .ws-region__body { display: grid; gap: 48px; }
+  .ws-work__intro { margin-bottom: 0; }
+  .ws-frame { display: grid; gap: 20px; }
+  .ws-frame__label { display: flex; align-items: baseline; gap: 8px; font-size: var(--t-section); letter-spacing: -0.02em; }
+  .ws-frame__count { font-family: var(--f-body); font-size: var(--t-xs); font-weight: 600; letter-spacing: 0; color: var(--c-clay-text); font-variant-numeric: tabular-nums; }
+  .ws-frame__cards { display: grid; gap: 32px; }
+  .ws-card__open { display: none; }
+}
+
+@media (min-width: 560px) and (max-width: 767.98px) {
+  .ws-frame__cards { grid-template-columns: 1fr 1fr; gap: 32px 16px; }
+  .ws-card--feature { grid-column: 1 / -1; }
+}
+
+/* ---------- Canvas (tablet & desktop) ---------- */
+
+@media (min-width: 768px) {
+  .panel:has(.site-canvas) .site-footer { display: none; }
+
+  .site-canvas {
+    position: relative;
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    height: 100vh;
+    height: 100dvh;
+  }
+  .site-canvas:fullscreen { height: 100vh; background: var(--c-shell); }
+
+  .ws-viewport {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    overflow: clip;
+    background: var(--c-shell);
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+    outline: none;
+  }
+  .ws-viewport.is-dragging { cursor: grabbing; }
+  .ws-viewport.is-dragging :is(a, button) { pointer-events: none; }
+  .ws-viewport:focus-visible { box-shadow: inset 0 0 0 2px var(--c-ink); }
+
+  /* Dot grid moves with the board, so a drag reads as movement even across empty space. */
+  .ws-board {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: var(--board-w);
+    height: var(--board-h);
+    will-change: transform;
+    background-image: radial-gradient(circle, color-mix(in srgb, var(--c-ink) 16%, transparent) 1px, transparent 1.5px);
+    background-size: 24px 24px;
+  }
+
+  /* Each region is an artboard: label above, white sheet below. */
+  .ws-region {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--w);
+    height: var(--h);
+    animation: ws-in 0.7s var(--ease) backwards;
+    animation-delay: calc(var(--i) * 70ms + 50ms);
+  }
+  .ws-region__label { position: absolute; left: 4px; bottom: 100%; margin-bottom: 10px; }
+  .ws-region__body {
+    height: 100%;
+    padding: 44px 44px 48px;
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+    box-shadow: 0 8px 22px -14px rgba(41, 43, 38, 0.18);
+  }
+  .ws-about { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 56px; }
+  .ws-about__side { padding-top: 6px; }
+
+  /* Work holds its own artboards, so its region is just a positioning context. */
+  .ws-region--work .ws-region__body { position: relative; padding: 0; background: none; border: 0; box-shadow: none; }
+  .ws-work__intro { max-width: 40rem; padding-left: 4px; }
+
+  /* Floating controls */
+  .ws-bar {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    right: 12px;
+    z-index: 3;
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 12px;
+    pointer-events: none;
+  }
+  .ws-bar > * { pointer-events: auto; }
+  .ws-bar__hint,
+  .ws-bar__btn {
+    display: inline-flex;
+    align-items: center;
+    min-height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--c-border);
+    background: color-mix(in srgb, var(--c-bg) 94%, transparent);
+    box-shadow: var(--shadow-chip);
+  }
+  .ws-bar__actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  .ws-bar__hint { display: none; padding: 0 14px; font-size: var(--t-xs); color: var(--c-muted); }
+  .ws-bar__btn { padding: 0 14px; font-size: var(--t-xs); font-weight: 600; color: var(--c-ink); cursor: pointer; transition: border-color 0.2s; }
+  .ws-bar__btn:hover { border-color: var(--c-border-strong); }
+
+  .ws-frame {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--w);
+    height: var(--h);
+    background: var(--c-bg);
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-lg);
+  }
+  .ws-frame__label {
+    position: absolute;
+    left: 4px;
+    bottom: 100%;
+    margin-bottom: 8px;
+    display: flex;
+    gap: 8px;
+    font-family: var(--f-body);
+    font-size: var(--t-xs);
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--c-muted);
+  }
+  .ws-frame__count { color: var(--c-clay-text); font-variant-numeric: tabular-nums; }
+
+  .ws-card { position: absolute; left: var(--x); top: var(--y); width: var(--w); }
+
+  .ws-card__link { grid-template-areas: 'media' 'caption'; }
+  .ws-card__media {
+    box-shadow: 0 8px 22px -16px rgba(41, 43, 38, 0.25);
+    transition: transform 0.42s var(--ease), box-shadow 0.35s var(--ease);
+  }
+
+  /* Details surface over the cover's lower edge on hover / focus. */
+  .ws-card__peek {
+    grid-area: media;
+    align-self: end;
+    z-index: 2;
+    margin: 8px;
+    padding: 12px 14px;
+    border: 1px solid var(--c-border);
+    border-radius: var(--r-md);
+    background: var(--c-bg);
+    box-shadow: var(--shadow-chip);
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.2s, transform 0.35s var(--ease);
+    pointer-events: none;
+  }
+  .ws-card__summary {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.8125rem;
+    line-height: 1.55;
+  }
+
+  .ws-card__link:hover .ws-card__media,
+  .ws-card__link:focus-visible .ws-card__media {
+    transform: translateY(-3px);
+    box-shadow: 0 18px 36px -20px rgba(41, 43, 38, 0.4);
+  }
+  .ws-card__link:hover .ws-card__peek,
+  .ws-card__link:focus-visible .ws-card__peek { opacity: 1; transform: none; }
+
+  .ws-note {
+    position: absolute;
+    left: var(--x);
+    top: var(--y);
+    width: var(--w);
+    display: grid;
+    gap: 6px;
+    padding: 16px;
+    border-radius: var(--r-md);
+    background: var(--c-bg);
+    border: 1px dashed var(--c-border-strong);
+    font-size: var(--t-small);
+    line-height: 1.6;
+    color: var(--c-muted);
+  }
+  .ws-note__label { font-size: var(--t-xs); font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: var(--c-clay-text); }
+}
+
+/* The shell's top gap and the panel's rounded corner, on desktop */
+@media (min-width: 1024px) {
+  .site-canvas { height: calc(100vh - 9px); height: calc(100dvh - 9px); }
+  .ws-viewport { border-top-left-radius: calc(var(--r-lg) - 1px); }
+  .site-canvas:fullscreen { height: 100vh; }
+  .site-canvas:fullscreen .ws-viewport { border-radius: 0; }
+  .ws-bar__hint { display: inline-flex; }
+}
+
+/* ---------- Shared-element transition into the case study ---------- */
+
+::view-transition-group(project-hero) { animation-duration: 0.5s; animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1); }
+::view-transition-old(root),
+::view-transition-new(root) { animation-duration: 0.28s; }

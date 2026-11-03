@@ -1,22 +1,24 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import Layout from './components/Layout'
-import Home from './pages/Home'
-import Work from './pages/Work'
+import SiteCanvas from './components/canvas/SiteCanvas'
 import ProjectDetail from './pages/ProjectDetail'
-import About from './pages/About'
-import Contact from './pages/Contact'
 import NotFound from './pages/NotFound'
 
+// Home, Work, About and Contact are regions of one canvas. They share a single layout route so the
+// canvas stays mounted and a route change glides the board instead of loading a new page.
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
         <Route element={<Layout />}>
-          <Route index element={<Home />} />
-          <Route path="work" element={<Work />} />
+          <Route element={<SiteCanvas />}>
+            <Route index element={null} />
+            <Route path="work" element={null} />
+            <Route path="about" element={null} />
+            <Route path="contact" element={null} />
+          </Route>
+          <Route path="canvas" element={<Navigate to="/work" replace />} />
           <Route path="work/:slug" element={<ProjectDetail />} />
-          <Route path="about" element={<About />} />
-          <Route path="contact" element={<Contact />} />
           <Route path="*" element={<NotFound />} />
         </Route>
       </Routes>

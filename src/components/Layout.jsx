@@ -1,12 +1,14 @@
 import { useEffect } from 'react'
 import { Outlet, useLocation } from 'react-router-dom'
 import Sidebar from './Sidebar'
+import { regionForPath } from '../data/canvas'
 import { site } from '../data/site'
 
 function ScrollManager() {
   const { pathname, hash } = useLocation()
 
   useEffect(() => {
+    if (regionForPath(pathname)) return // canvas regions position themselves (see SiteCanvas)
     if (hash) {
       const el = document.getElementById(decodeURIComponent(hash.slice(1)))
       if (el) {

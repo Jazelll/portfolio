@@ -5,6 +5,7 @@ import Reveal from '../components/Reveal'
 import Img from '../components/Img'
 import ProjectVisual from '../components/ProjectVisual'
 import PageView from '../components/PageView'
+import TransitionLink from '../components/TransitionLink'
 import { MemoireFeature } from '../components/illustrations/MemoireIllustration'
 import { ArrowLeft, ArrowRight } from '../components/icons'
 import NotFound from './NotFound'
@@ -75,7 +76,9 @@ export default function ProjectDetail() {
   return (
     <article className="page">
       <Reveal as="header" className="intro">
-        <Link to="/work" className="text-link text-link--back"><ArrowLeft size={14} /> All work</Link>
+        <TransitionLink to="/work" state={{ restore: true }} className="text-link text-link--back">
+          <ArrowLeft size={14} /> Back to work
+        </TransitionLink>
         <h1 className="page-title">{project.title}</h1>
         <p>{project.subtitle}</p>
         <ul className="chips">
@@ -84,9 +87,10 @@ export default function ProjectDetail() {
         </ul>
       </Reveal>
 
-      <Reveal className="cs-hero">
+      {/* Not wrapped in Reveal: the hero is the shared element arriving from a canvas card. */}
+      <div className="cs-hero">
         <ProjectVisual project={project} priority sizes="(min-width: 1024px) 760px, 100vw" />
-      </Reveal>
+      </div>
       {project.illustrative && (
         <p className="note">
           {project.confidential

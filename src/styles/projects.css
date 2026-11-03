@@ -113,7 +113,7 @@
 /* ================= Case study ================= */
 
 .cs-hero { margin-top: 40px; }
-.cs-hero .project-visual { border-radius: var(--r-lg); border: 1px solid var(--c-border); }
+.cs-hero .project-visual { border-radius: var(--r-lg); border: 1px solid var(--c-border); view-transition-name: project-hero; }
 
 .meta-grid {
   margin-top: 32px;

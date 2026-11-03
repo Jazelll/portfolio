@@ -143,3 +143,49 @@
 }
 .site-footer .text-link { font-size: var(--t-xs); }
 @media (min-width: 1024px) { .site-footer { padding-bottom: 32px; } }
+
+/* ---------- Collapsible sidebar (desktop): full panel <-> icon rail ---------- */
+
+.side-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.side-collapse, .side-cta__icon { display: none; }
+
+@media (min-width: 1024px) {
+  html[data-sidebar='collapsed'] { --sidebar-w: 4.5rem; }
+
+  .sidebar { overflow-x: hidden; white-space: nowrap; transition: width 0.35s var(--ease), padding 0.35s var(--ease); }
+  .shell { transition: margin-left 0.35s var(--ease); }
+  .profile { min-width: 0; }
+
+  .side-collapse {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: var(--r-sm);
+    background: none;
+    color: var(--c-muted);
+    cursor: pointer;
+    transition: color 0.2s, background-color 0.2s;
+  }
+  .side-collapse:hover { color: var(--c-ink); background: var(--c-bg); }
+
+  html[data-sidebar='collapsed'] .sidebar { padding-inline: 12px; }
+  html[data-sidebar='collapsed'] .side-head { flex-direction: column; gap: 12px; }
+  html[data-sidebar='collapsed'] .profile { padding: 0; }
+
+  /* Labels leave the layout but stay in the accessibility tree */
+  html[data-sidebar='collapsed'] :is(.profile__text, .side-nav__label, .side-group__title, .side-cta__label, .side-cta__arrow) {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+
+  html[data-sidebar='collapsed'] .side-nav__link { justify-content: center; padding: 0; }
+  html[data-sidebar='collapsed'] .side-group { gap: 2px; padding-top: 16px; border-top: 1px solid var(--c-border); }
+  html[data-sidebar='collapsed'] .side-cta { align-self: center; justify-content: center; width: 44px; padding: 0; }
+  html[data-sidebar='collapsed'] .side-cta__icon { display: block; }
+}
