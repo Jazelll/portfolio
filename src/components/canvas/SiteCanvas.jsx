@@ -33,6 +33,8 @@ const UI_KEY = 'editor:ui'
 const BAR_INSET = { top: 64, left: 0 } // tablet: room kept clear of the floating bar
 const NO_INSET = { top: 0, left: 0 }
 const BOARD_PAD = 80
+// Below this zoom a frame is too small to read, so going to a section also zooms back to 100%.
+const READABLE_ZOOM = 0.6
 
 const META = {
   home: {},
@@ -258,6 +260,10 @@ export default function SiteCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [layout])
 
+  // Bring a section frame into view, zooming back in first if the board is zoomed too far out to read it.
+  const goToRegion = (el, opts) =>
+    panToRect(rectOf(el), { ...opts, scale: scaleRef.current < READABLE_ZOOM ? 1 : undefined })
+
   // Route -> board position. First run jumps (or keeps the restored spot); later runs glide and move focus.
   // Waits for the measured layout: saved positions refer to it, not to the first-paint estimate.
   const placed = useRef(false)
@@ -273,14 +279,15 @@ export default function SiteCanvas() {
       // A remembered spot only wins if it's still on the region the URL names.
       const vp = viewportRef.current
       const keep = restoring && regionAt(stored.pan, { width: vp.clientWidth, height: vp.clientHeight })?.id === region.id
-      if (!keep) panToRect(rectOf(el), { instant: true })
+      if (!keep) goToRegion(el, { instant: true })
       return
     }
     if (location.state?.panned) return
-    panToRect(rectOf(el))
+    goToRegion(el)
     focusQuietly(el.querySelector('[tabindex="-1"]'))
+    // Keyed on the navigation, not the path, so clicking the section you're already on still brings it back.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, canvas, measured])
+  }, [location.key, canvas, measured])
 
   // Phones: routes scroll the stacked page to their region.
   const scrolled = useRef(false)
@@ -349,7 +356,7 @@ export default function SiteCanvas() {
     setSelected(id)
     const rect = layerRect(id)
     // Far zoomed out, jumping to a layer also brings it back to a readable size.
-    if (rect) panToRect(rect, { scale: scaleRef.current < 0.6 ? 1 : undefined })
+    if (rect) panToRect(rect, { scale: scaleRef.current < READABLE_ZOOM ? 1 : undefined })
     if (id.startsWith('project-')) focusQuietly(boardRef.current.querySelector(`[data-layer="${id}"] a`))
   }
 
@@ -426,7 +433,7 @@ export default function SiteCanvas() {
         <div className="ws-bar">
           <div className="ws-bar__actions">
             <ThemeToggle className="ws-bar__btn ws-bar__btn--icon" />
-            <button type="button" className="ws-bar__btn" onClick={() => panToRect(rectOf(regionEl(region.id)))}>
+            <button type="button" className="ws-bar__btn" onClick={() => goToRegion(regionEl(region.id))}>
               Recenter
             </button>
             {fullscreen.supported && (
