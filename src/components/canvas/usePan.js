@@ -1,18 +1,27 @@
 import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 
-// Pans a board inside a clipped viewport: pointer drag with momentum, wheel / trackpad, arrow keys, and
-// auto-reveal of whatever receives keyboard focus. Writes the transform straight to the DOM so dragging
-// never re-renders React.
+// Pans and zooms a board inside a clipped viewport: pointer drag with momentum, wheel / trackpad to pan,
+// ctrl/⌘+wheel or pinch to zoom at the cursor, arrow keys and +/− / Shift+0 / Shift+1 when focused, and
+// auto-reveal of whatever receives keyboard focus. Writes the transform straight to the DOM (and the
+// current zoom to --zoom) so moving never re-renders React.
+//
+// Sharpness: while moving, the board is a GPU layer (fast, but rasterised once and stretched). At rest it
+// drops back to a plain 2D transform on whole pixels, so the browser repaints text and images crisply at
+// the current zoom instead of showing a scaled bitmap.
 //
 // `inset` reserves room at the viewport's top/left for UI floating over the canvas: the board can be
 // pulled that much further in, and revealed items stay clear of it.
 
-const EDGE = 64 // how far the board may be pulled past its edges
+const EDGE = 64 // how far the board may be pulled past its edges, in screen px
 const DRAG_THRESHOLD = 6 // px of movement before a press becomes a drag (below it, clicks go through)
 const REVEAL_MARGIN = 32
+const LABEL_ROOM = 48 // space above a top-aligned rect for the name label that sits outside it
+export const MIN_ZOOM = 0.25
+export const MAX_ZOOM = 2
 
 const easeOut = (t) => 1 - Math.pow(1 - t, 4)
 const prefersReducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
+const clampZoom = (s) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, s))
 
 const NO_INSET = { top: 0, left: 0 }
 
@@ -21,37 +30,64 @@ function clampAxis(value, view, total, start) {
   return Math.min(EDGE + start, Math.max(view - total - EDGE, value))
 }
 
-export default function usePan({ viewportRef, boardRef, board, enabled, initial, inset = NO_INSET, onSettle }) {
-  const pos = useRef({ ...initial })
+export default function usePan({ viewportRef, boardRef, board, enabled, initial, inset = NO_INSET, onSettle, onZoom }) {
+  const pos = useRef({ x: initial.x, y: initial.y, s: initial.s ?? 1 })
   const view = useRef({ width: 0, height: 0 })
   const raf = useRef(0)
+  const lastZoom = useRef(null)
+  const moving = useRef(false)
   const pointerDown = useRef(false)
   const dragged = useRef(false)
   const suppressReveal = useRef(false)
   const settleRef = useRef(onSettle)
   settleRef.current = onSettle
+  const zoomRef = useRef(onZoom)
+  zoomRef.current = onZoom
 
   const clamp = useCallback(
-    ({ x, y }) => ({
-      x: clampAxis(x, view.current.width, board.width, inset.left),
-      y: clampAxis(y, view.current.height, board.height, inset.top),
+    ({ x, y, s = pos.current.s }) => ({
+      x: clampAxis(x, view.current.width, board.width * s, inset.left),
+      y: clampAxis(y, view.current.height, board.height * s, inset.top),
+      s,
     }),
     [board.width, board.height, inset.left, inset.top],
   )
 
   const apply = useCallback(() => {
     const el = boardRef.current
-    if (el) el.style.transform = `translate3d(${pos.current.x}px, ${pos.current.y}px, 0)`
+    if (!el) return
+    const { x, y, s } = pos.current
+    el.style.transform = moving.current
+      ? `translate3d(${x}px, ${y}px, 0) scale(${s})`
+      : `translate(${Math.round(x)}px, ${Math.round(y)}px) scale(${s})`
+    if (s !== lastZoom.current) {
+      lastZoom.current = s
+      el.style.setProperty('--zoom', s)
+      zoomRef.current?.(s)
+    }
   }, [boardRef])
 
-  const settle = useCallback(() => settleRef.current?.({ ...pos.current }, { ...view.current }), [])
+  const startMoving = useCallback(() => {
+    if (moving.current) return
+    moving.current = true
+    boardRef.current?.classList.add('is-moving')
+  }, [boardRef])
+
+  // Motion has ended: repaint sharply, then report the resting position.
+  const settle = useCallback(() => {
+    moving.current = false
+    boardRef.current?.classList.remove('is-moving')
+    apply()
+    settleRef.current?.({ ...pos.current }, { ...view.current })
+  }, [apply, boardRef])
 
   const stop = () => cancelAnimationFrame(raf.current)
 
+  // Tween any of x / y / s.
   const animateTo = useCallback(
     (target, { duration = 560 } = {}) => {
       stop()
-      const to = clamp(target)
+      const to = clamp({ ...pos.current, ...target })
       if (prefersReducedMotion()) {
         pos.current = to
         apply()
@@ -60,23 +96,68 @@ export default function usePan({ viewportRef, boardRef, board, enabled, initial,
       }
       const from = { ...pos.current }
       const start = performance.now()
+      startMoving()
       const tick = (now) => {
         const t = Math.min(1, (now - start) / duration)
         const e = easeOut(t)
-        pos.current = { x: from.x + (to.x - from.x) * e, y: from.y + (to.y - from.y) * e }
+        pos.current = {
+          x: from.x + (to.x - from.x) * e,
+          y: from.y + (to.y - from.y) * e,
+          s: from.s + (to.s - from.s) * e,
+        }
         apply()
         if (t < 1) raf.current = requestAnimationFrame(tick)
         else settle()
       }
       raf.current = requestAnimationFrame(tick)
     },
-    [apply, clamp, settle],
+    [apply, clamp, settle, startMoving],
   )
 
   const panBy = useCallback(
     (dx, dy, opts) => animateTo({ x: pos.current.x + dx, y: pos.current.y + dy }, opts),
     [animateTo],
   )
+
+  // Zoom keeping the board point under `at` (viewport px; default: centre) fixed on screen.
+  const zoomTo = useCallback(
+    (scale, { at, animate = true } = {}) => {
+      stop()
+      const px = at?.x ?? view.current.width / 2
+      const py = at?.y ?? view.current.height / 2
+      const from = { ...pos.current }
+      const to = clampZoom(scale)
+      const anchor = { x: (px - from.x) / from.s, y: (py - from.y) / from.s }
+      const place = (s) => clamp({ x: px - anchor.x * s, y: py - anchor.y * s, s })
+
+      if (!animate || prefersReducedMotion()) {
+        pos.current = place(to)
+        apply()
+        return
+      }
+      const start = performance.now()
+      startMoving()
+      const tick = (now) => {
+        const t = Math.min(1, (now - start) / 280)
+        pos.current = place(from.s + (to - from.s) * easeOut(t))
+        apply()
+        if (t < 1) raf.current = requestAnimationFrame(tick)
+        else settle()
+      }
+      raf.current = requestAnimationFrame(tick)
+    },
+    [apply, clamp, settle, startMoving],
+  )
+
+  const zoomBy = useCallback((factor, opts) => zoomTo(pos.current.s * factor, opts), [zoomTo])
+
+  // Fit the whole board in view (never above 100%).
+  const fit = useCallback(() => {
+    const availW = view.current.width - inset.left - REVEAL_MARGIN * 2
+    const availH = view.current.height - inset.top - REVEAL_MARGIN * 2
+    const s = clampZoom(Math.min(availW / board.width, availH / board.height, 1))
+    animateTo({ x: 0, y: 0, s }, { duration: 560 })
+  }, [animateTo, board.width, board.height, inset.left, inset.top])
 
   // Offset needed to bring an element fully into the viewport (or its top-left, if it's bigger).
   const offsetToReveal = useCallback(
@@ -96,24 +177,24 @@ export default function usePan({ viewportRef, boardRef, board, enabled, initial,
     [viewportRef, inset.left, inset.top],
   )
 
-  // Bring a board-space rect into view: centred when it fits the free area, otherwise top-left aligned.
+  // Bring a board-space rect into view (at the current zoom, or `scale`): centred when it fits,
+  // otherwise top-left aligned.
   const panToRect = useCallback(
-    (rect, { instant = false } = {}) => {
+    (rect, { instant = false, scale } = {}) => {
+      const s = scale ? clampZoom(scale) : pos.current.s
       const availW = view.current.width - inset.left
       const availH = view.current.height - inset.top
-      const x = rect.width + REVEAL_MARGIN * 2 <= availW
-        ? inset.left + (availW - rect.width) / 2 - rect.x
-        : inset.left + REVEAL_MARGIN - rect.x
-      const y = rect.height + REVEAL_MARGIN * 2 <= availH
-        ? inset.top + (availH - rect.height) / 2 - rect.y
-        : inset.top + 16 - rect.y
+      const w = rect.width * s
+      const h = rect.height * s
+      const x = w + REVEAL_MARGIN * 2 <= availW ? inset.left + (availW - w) / 2 - rect.x * s : inset.left + REVEAL_MARGIN - rect.x * s
+      const y = h + REVEAL_MARGIN * 2 <= availH ? inset.top + (availH - h) / 2 - rect.y * s : inset.top + LABEL_ROOM - rect.y * s
       if (instant) {
         stop()
-        pos.current = clamp({ x, y })
+        pos.current = clamp({ x, y, s })
         apply()
         settle()
       } else {
-        animateTo({ x, y }, { duration: 720 })
+        animateTo({ x, y, s }, { duration: 720 })
       }
     },
     [animateTo, apply, clamp, settle, inset.left, inset.top],
@@ -191,6 +272,7 @@ export default function usePan({ viewportRef, boardRef, board, enabled, initial,
       if (!drag.active) {
         if (Math.hypot(dx, dy) < DRAG_THRESHOLD) return
         drag.active = true
+        startMoving()
         vp.setPointerCapture(e.pointerId)
         vp.classList.add('is-dragging')
       }
@@ -206,7 +288,10 @@ export default function usePan({ viewportRef, boardRef, board, enabled, initial,
       const wasDrag = drag.active
       drag = null
       vp.classList.remove('is-dragging')
-      if (!wasDrag) return
+      if (!wasDrag) {
+        if (moving.current) settle() // a press that interrupted a glide
+        return
+      }
       dragged.current = true
       const first = samples.find((s) => e.timeStamp - s.t < 100) ?? samples[0]
       const dt = Math.max(1, e.timeStamp - first.t)
@@ -222,19 +307,47 @@ export default function usePan({ viewportRef, boardRef, board, enabled, initial,
     }
 
     const onWheel = (e) => {
-      if (e.ctrlKey) return // pinch / ctrl+wheel stays browser zoom
       e.preventDefault()
       stop()
-      // Shift turns a plain mouse wheel into horizontal movement.
-      const [dx, dy] = e.shiftKey && !e.deltaX ? [e.deltaY, 0] : [e.deltaX, e.deltaY]
-      pos.current = clamp({ x: pos.current.x - dx, y: pos.current.y - dy })
-      apply()
+      startMoving()
+      if (e.ctrlKey || e.metaKey) {
+        // Pinch arrives as ctrl+wheel with small deltas; a mouse wheel notch is ~100. Cap each step.
+        const factor = Math.min(1.25, Math.max(0.8, Math.exp(-e.deltaY * 0.01)))
+        const vr = vp.getBoundingClientRect()
+        zoomTo(pos.current.s * factor, { at: { x: e.clientX - vr.left, y: e.clientY - vr.top }, animate: false })
+      } else {
+        // Shift turns a plain mouse wheel into horizontal movement.
+        const [dx, dy] = e.shiftKey && !e.deltaX ? [e.deltaY, 0] : [e.deltaX, e.deltaY]
+        pos.current = clamp({ x: pos.current.x - dx, y: pos.current.y - dy })
+        apply()
+      }
       clearTimeout(wheelTimer)
       wheelTimer = setTimeout(settle, 200)
     }
 
     const onKeyDown = (e) => {
       if (e.altKey || e.metaKey || e.ctrlKey) return
+      if (e.target.closest('input, textarea, select')) return
+      if (e.key === '+' || e.key === '=') {
+        e.preventDefault()
+        zoomBy(1.25)
+        return
+      }
+      if (e.key === '-' || e.key === '_') {
+        e.preventDefault()
+        zoomBy(0.8)
+        return
+      }
+      if (e.shiftKey && e.code === 'Digit0') {
+        e.preventDefault()
+        zoomTo(1)
+        return
+      }
+      if (e.shiftKey && e.code === 'Digit1') {
+        e.preventDefault()
+        fit()
+        return
+      }
       const step = e.shiftKey ? 320 : 96
       const moves = { ArrowLeft: [step, 0], ArrowRight: [-step, 0], ArrowUp: [0, step], ArrowDown: [0, -step] }
       const move = moves[e.key]
@@ -284,7 +397,7 @@ export default function usePan({ viewportRef, boardRef, board, enabled, initial,
       vp.removeEventListener('scroll', onScroll)
       vp.removeEventListener('dragstart', onDragStart)
     }
-  }, [enabled, viewportRef, clamp, apply, settle, panBy, offsetToReveal])
+  }, [enabled, viewportRef, clamp, apply, settle, startMoving, panBy, zoomTo, zoomBy, fit, offsetToReveal])
 
-  return { panToRect, focusQuietly }
+  return { panToRect, focusQuietly, zoomTo, zoomBy, fit }
 }

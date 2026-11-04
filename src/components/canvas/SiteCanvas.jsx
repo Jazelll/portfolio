@@ -1,18 +1,25 @@
-import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
 import { REGIONS, regionForPath } from '../../data/canvas'
 import usePageMeta from '../usePageMeta'
 import { HERO_TRANSITION } from '../TransitionLink'
 import usePan from './usePan'
 import { AboutRegion, ContactRegion, HomeRegion, WorkRegion } from './regions'
+import { Inspector, LayersPanel, Toolbar } from './editor'
 
 // The whole site as one board. `/`, `/work`, `/about` and `/contact` are regions on it: visiting a route
-// glides the board to its region, and dragging into another region updates the URL (and so the sidebar).
-// Below 768px the regions stack into one long page and the routes scroll to them instead.
+// glides the board to its region, and dragging into another region updates the URL (and so the nav).
+//
+//  - ≥1024px: design-tool editor: toolbar, Pages + Layers panel, inspector, selection and zoom.
+//  - 768–1023px: the bare canvas with a floating control bar.
+//  - <768px: the regions stack into one long page and the routes scroll to them.
 
 const CANVAS_QUERY = '(min-width: 768px)'
-const STORAGE_KEY = 'canvas:v2'
-const INSET = { top: 64, left: 0 } // room kept clear of the floating bar
+const EDITOR_QUERY = '(min-width: 1024px)'
+const STORAGE_KEY = 'canvas:v3'
+const UI_KEY = 'editor:ui'
+const BAR_INSET = { top: 64, left: 0 } // tablet: room kept clear of the floating bar
+const NO_INSET = { top: 0, left: 0 }
 const BOARD_PAD = 80
 
 const META = {
@@ -22,21 +29,23 @@ const META = {
   contact: { title: 'Contact', description: 'Get in touch with UI/UX designer Althea Rito by email or LinkedIn.' },
 }
 
-// Session storage can be unavailable (private mode, blocked storage); the canvas works without it.
-const readStored = () => {
+// Storage can be unavailable (private mode, blocked storage); the canvas works without it.
+const readJSON = (store, key) => {
   try {
-    return JSON.parse(sessionStorage.getItem(STORAGE_KEY)) ?? {}
+    return JSON.parse(store.getItem(key)) ?? {}
   } catch {
     return {}
   }
 }
-const writeStored = (patch) => {
+const writeJSON = (store, key, patch) => {
   try {
-    sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...readStored(), ...patch }))
+    store.setItem(key, JSON.stringify({ ...readJSON(store, key), ...patch }))
   } catch {
     /* ignore */
   }
 }
+const readStored = () => readJSON(sessionStorage, STORAGE_KEY)
+const writeStored = (patch) => writeJSON(sessionStorage, STORAGE_KEY, patch)
 
 function useMediaQuery(query) {
   const [matches, setMatches] = useState(() => window.matchMedia(query).matches)
@@ -82,6 +91,7 @@ export default function SiteCanvas() {
   const navigate = useNavigate()
   const region = regionForPath(location.pathname) ?? REGIONS[0]
   const canvas = useMediaQuery(CANVAS_QUERY)
+  const editor = useMediaQuery(EDITOR_QUERY)
   const rootRef = useRef(null)
   const viewportRef = useRef(null)
   const boardRef = useRef(null)
@@ -89,31 +99,54 @@ export default function SiteCanvas() {
   const fullscreen = useFullscreen(rootRef)
   const [stored] = useState(readStored)
   const [board, setBoard] = useState(ESTIMATED_BOARD)
+  const [zoom, setZoom] = useState(Math.round((stored.pan?.s ?? 1) * 100))
+  const [selected, setSelected] = useState(null)
+  const [selRect, setSelRect] = useState(null)
+  const [hover, setHover] = useState(null)
+  const [hoverRect, setHoverRect] = useState(null)
+  const [uiHidden, setUiHidden] = useState(() => readJSON(localStorage, UI_KEY).hidden === true)
+  const inset = useMemo(() => (canvas && !editor ? BAR_INSET : NO_INSET), [canvas, editor])
 
   // Keep the place on the board when coming back from a case study, or on reload / history navigation.
   const [restoring] = useState(() => Boolean(stored.pan) && (navType === 'POP' || location.state?.restore))
 
   usePageMeta({ ...META[region.id], path: region.path })
 
+  // Lets the shell drop the site sidebar and go edge to edge while the editor is on screen.
+  useLayoutEffect(() => {
+    document.documentElement.dataset.editor = 'on'
+    return () => delete document.documentElement.dataset.editor
+  }, [])
+
   const regionRef = useRef(region.id)
   regionRef.current = region.id
+  const scaleRef = useRef(stored.pan?.s ?? 1)
 
   const regionEl = (id) => boardRef.current?.querySelector(`[data-region="${id}"]`)
   const rectOf = (el) => ({ x: el.offsetLeft, y: el.offsetTop, width: el.offsetWidth, height: el.offsetHeight })
 
+  // Board-space rect of any element on the board, whatever its nesting or the current zoom.
+  const layerRect = useCallback((id) => {
+    const el = boardRef.current?.querySelector(`[data-layer="${id}"]`)
+    if (!el) return null
+    const b = boardRef.current.getBoundingClientRect()
+    const r = el.getBoundingClientRect()
+    const s = scaleRef.current
+    return { x: (r.left - b.left) / s, y: (r.top - b.top) / s, width: r.width / s, height: r.height / s }
+  }, [])
+
   // The region nearest the centre of the free viewport area.
   const regionAt = (pos, view) => {
-    const cx = INSET.left + (view.width - INSET.left) / 2 - pos.x
-    const cy = INSET.top + (view.height - INSET.top) / 2 - pos.y
+    const s = pos.s ?? 1
+    const cx = (inset.left + (view.width - inset.left) / 2 - pos.x) / s
+    const cy = (inset.top + (view.height - inset.top) / 2 - pos.y) / s
     let best = null
     let bestDist = Infinity
     for (const r of REGIONS) {
       const el = regionEl(r.id)
       if (!el) continue
       const { x, y, width, height } = rectOf(el)
-      const dx = Math.max(x - cx, 0, cx - (x + width))
-      const dy = Math.max(y - cy, 0, cy - (y + height))
-      const dist = Math.hypot(dx, dy)
+      const dist = Math.hypot(Math.max(x - cx, 0, cx - (x + width)), Math.max(y - cy, 0, cy - (y + height)))
       if (dist < bestDist) {
         bestDist = dist
         best = r
@@ -124,18 +157,26 @@ export default function SiteCanvas() {
 
   const onSettle = (pos, view) => {
     writeStored({ pan: pos })
+    // With the whole board in view there's no "current" section, so leave the URL alone.
+    if (board.width * pos.s <= view.width && board.height * pos.s <= view.height) return
     const here = regionAt(pos, view)
     if (here && here.id !== regionRef.current) navigate(here.path, { replace: true, state: { panned: true } })
   }
 
-  const { panToRect, focusQuietly } = usePan({
+  const onZoom = useCallback((s) => {
+    scaleRef.current = s
+    setZoom(Math.round(s * 100))
+  }, [])
+
+  const { panToRect, focusQuietly, zoomTo, zoomBy, fit } = usePan({
     viewportRef,
     boardRef,
     board,
     enabled: canvas,
-    initial: restoring ? stored.pan : { x: 0, y: 0 },
-    inset: INSET,
+    initial: restoring ? stored.pan : { x: 0, y: 0, s: 1 },
+    inset,
     onSettle,
+    onZoom,
   })
 
   // Size the board to its content; regions grow when web fonts arrive.
@@ -191,6 +232,63 @@ export default function SiteCanvas() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, canvas])
 
+  /* ---------- Selection (editor) ---------- */
+
+  useLayoutEffect(() => {
+    setSelRect(selected ? layerRect(selected) : null)
+  }, [selected, board, layerRect])
+
+  useLayoutEffect(() => {
+    setHoverRect(hover && hover !== selected ? layerRect(hover) : null)
+  }, [hover, selected, layerRect])
+
+  useEffect(() => {
+    if (!editor) setSelected(null)
+  }, [editor])
+
+  // Clicking selects the innermost layer under the pointer; empty board clears the selection.
+  // Ordinary links and buttons inside the content keep working and don't change it.
+  const onBoardClick = (e) => {
+    if (!editor) return
+    const interactive = e.target.closest('a, button')
+    if (interactive && !interactive.closest('.ws-card')) return
+    setSelected(e.target.closest('[data-layer]')?.dataset.layer ?? null)
+  }
+
+  const selectFromLayers = (id) => {
+    setSelected(id)
+    const rect = layerRect(id)
+    // Far zoomed out, jumping to a layer also brings it back to a readable size.
+    if (rect) panToRect(rect, { scale: scaleRef.current < 0.6 ? 1 : undefined })
+    if (id.startsWith('project-')) focusQuietly(boardRef.current.querySelector(`[data-layer="${id}"] a`))
+  }
+
+  const onViewportKeyDown = (e) => {
+    if (e.key === 'Escape' && selected) setSelected(null)
+  }
+
+  const toggleUi = useCallback(() => {
+    setUiHidden((v) => {
+      writeJSON(localStorage, UI_KEY, { hidden: !v })
+      return !v
+    })
+  }, [])
+
+  // Ctrl+\ toggles the panels, as in most design tools.
+  useEffect(() => {
+    if (!editor) return undefined
+    const onKey = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === '\\') {
+        e.preventDefault()
+        toggleUi()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [editor, toggleUi])
+
+  /* ---------- Shared-element transition ---------- */
+
   // Give the shared-element name to exactly one cover, so it can morph into the case-study hero.
   const nameHero = useCallback((slug) => {
     boardRef.current?.querySelectorAll('[data-media]').forEach((el) => {
@@ -215,19 +313,29 @@ export default function SiteCanvas() {
   }, [stored.last, nameHero])
 
   const number = (r) => String(REGIONS.indexOf(r) + 1).padStart(2, '0')
+  const showPanels = editor && !uiHidden
 
   return (
-    <div ref={rootRef} className="site-canvas">
-      {canvas && (
+    <div ref={rootRef} className={`site-canvas${showPanels ? ' has-panels' : ''}`}>
+      {editor && (
+        <Toolbar
+          region={region}
+          zoom={zoom}
+          onZoomIn={() => zoomBy(1.25)}
+          onZoomOut={() => zoomBy(0.8)}
+          onZoomReset={() => zoomTo(1)}
+          onFit={fit}
+          fullscreen={fullscreen}
+          uiHidden={uiHidden}
+          onToggleUi={toggleUi}
+        />
+      )}
+
+      {showPanels && <LayersPanel regionId={region.id} selectedId={selected} onSelect={selectFromLayers} onHover={setHover} />}
+
+      {canvas && !editor && (
         <div className="ws-bar">
           <div className="ws-bar__actions">
-            <p className="ws-bar__hint" id={hintId}>
-              <span aria-hidden="true">Drag or scroll to explore</span>
-              <span className="visually-hidden">
-                The site is one canvas. Drag, scroll, or use the arrow keys while it is focused to move around;
-                the menu jumps between sections. Tab moves through links.
-              </span>
-            </p>
             <button type="button" className="ws-bar__btn" onClick={() => panToRect(rectOf(regionEl(region.id)))}>
               Recenter
             </button>
@@ -247,8 +355,21 @@ export default function SiteCanvas() {
         aria-label={canvas ? 'Site canvas' : undefined}
         aria-describedby={canvas ? hintId : undefined}
         tabIndex={canvas ? 0 : undefined}
+        onKeyDown={onViewportKeyDown}
       >
-        <div ref={boardRef} className="ws-board" style={{ '--board-w': `${board.width}px`, '--board-h': `${board.height}px` }}>
+        {canvas && (
+          <p className="visually-hidden" id={hintId}>
+            The site is one canvas. Drag, scroll, or use the arrow keys while it is focused to move around; hold Ctrl
+            and scroll, or press plus and minus, to zoom. The pages list jumps between sections. Tab moves through links.
+          </p>
+        )}
+        {/* Pointer selection; keyboard users get the same through the Layers panel. */}
+        <div
+          ref={boardRef}
+          className="ws-board"
+          style={{ '--board-w': `${board.width}px`, '--board-h': `${board.height}px` }}
+          onClick={onBoardClick}
+        >
           {REGIONS.map((r, i) => {
             const Content = CONTENT[r.id]
             return (
@@ -257,6 +378,7 @@ export default function SiteCanvas() {
                 id={`region-${r.id}`}
                 className={`ws-region ws-region--${r.id}`}
                 data-region={r.id}
+                data-layer={`region-${r.id}`}
                 aria-labelledby={`region-${r.id}-title`}
                 style={{
                   '--x': `${r.x}px`,
@@ -271,13 +393,32 @@ export default function SiteCanvas() {
                   {r.label}
                 </p>
                 <div className="ws-region__body">
-                  <Content canvas={canvas} onOpen={openProject} />
+                  <Content canvas={canvas} editor={editor} selected={selected} onOpen={openProject} />
                 </div>
               </section>
             )
           })}
+
+          {editor && hoverRect && (
+            <div className="ws-outline ws-outline--hover" style={rectStyle(hoverRect)} aria-hidden="true" />
+          )}
+          {editor && selRect && (
+            <div className="ws-outline ws-outline--selected" style={rectStyle(selRect)} aria-hidden="true">
+              <span className="ws-outline__handle" data-pos="tl" />
+              <span className="ws-outline__handle" data-pos="tr" />
+              <span className="ws-outline__handle" data-pos="bl" />
+              <span className="ws-outline__handle" data-pos="br" />
+              <span className="ws-outline__size">
+                {Math.round(selRect.width)} × {Math.round(selRect.height)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
+
+      {showPanels && <Inspector selectedId={selected} rect={selRect} onOpenProject={openProject} onClear={() => setSelected(null)} />}
     </div>
   )
 }
+
+const rectStyle = (r) => ({ left: r.x, top: r.y, width: r.width, height: r.height })

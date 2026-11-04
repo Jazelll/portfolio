@@ -4,7 +4,9 @@ import TransitionLink from '../TransitionLink'
 
 // One project on the canvas. Position and size come in as CSS variables so the same markup
 // can sit on the canvas (desktop/tablet) or flow as a list (mobile).
-export default function ProjectCard({ project, variant, x, y, width, index, canvas, onOpen }) {
+// In the desktop editor a click first selects the card (`selectFirst`); a second click, a double-click,
+// or Enter opens it.
+export default function ProjectCard({ project, variant, x, y, width, index, canvas, selectFirst, onOpen }) {
   const id = useId()
   const sizes = canvas ? `${width}px` : '(min-width: 560px) 50vw, 100vw'
 
@@ -13,6 +15,7 @@ export default function ProjectCard({ project, variant, x, y, width, index, canv
       className={`ws-card ws-card--${variant}`}
       data-ws-item
       data-slug={project.slug}
+      data-layer={`project-${project.slug}`}
       style={{ '--x': `${x}px`, '--y': `${y}px`, '--w': `${width}px`, '--i': index }}
     >
       <TransitionLink
@@ -22,6 +25,10 @@ export default function ProjectCard({ project, variant, x, y, width, index, canv
         aria-labelledby={`${id}-title`}
         aria-describedby={`${id}-meta ${id}-peek`}
         onBeforeTransition={() => onOpen(project.slug)}
+        onClick={(e) => {
+          // e.detail is 0 for keyboard activation, which should always open.
+          if (selectFirst && e.detail !== 0) e.preventDefault()
+        }}
       >
         <div className="ws-card__media" data-media>
           {variant === 'browser' && (

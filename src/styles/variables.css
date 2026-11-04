@@ -1,24 +1,26 @@
 :root {
   color-scheme: light dark;
 
-  /* Palette — warm-neutral shell, white content panel, ink type; clay is the single accent */
-  --c-shell: #f5f4f1;
+  /* Palette — black and white: one background, one ink, a gray ramp between. Emphasis comes from
+     inversion (ink fill, white text), never from an accent hue. Token names are kept from the
+     earlier warm palette so components didn't have to change. */
+  --c-shell: #f5f5f5; /* canvas and shell backdrop */
   --c-bg: #ffffff;
   --c-surface: #ffffff; /* used by the illustrations */
-  --c-surface-2: #f4f2ee;
-  --c-hover: #faf9f7;
-  --c-sand: #e3d8c9;
-  --c-ink: #292b26;
-  --c-muted: #66655e;
-  --c-clay: #a58b70;
-  --c-clay-text: #85694f;
-  --c-sage: #68705c;
-  --c-border: #e8e4dd;
-  --c-border-strong: #d2cbbf;
+  --c-surface-2: #f5f5f5;
+  --c-hover: #fafafa;
+  --c-sand: #d4d4d4;
+  --c-ink: #0a0a0a;
+  --c-muted: #737373;
+  --c-clay: #404040; /* former accent: now a dark gray for small markers */
+  --c-clay-text: #404040;
+  --c-sage: #0a0a0a; /* status dot */
+  --c-border: #e9e9e9;
+  --c-border-strong: #d4d4d4;
   --c-on-ink: #ffffff;
-  --c-tint-warm: #f8f5ef; /* illustration backdrops */
+  --c-tint-warm: #fafafa; /* illustration backdrops */
 
-  /* Type */
+/* Type */
   --f-display: 'Manrope', system-ui, sans-serif;
   --f-body: 'DM Sans', system-ui, sans-serif;
 
@@ -37,27 +39,27 @@
   --r-md: 10px;
   --r-lg: 16px;
 
-  --shadow-chip: 0 1px 2px rgba(41, 43, 38, 0.06), 0 6px 16px -6px rgba(41, 43, 38, 0.14);
+  --shadow-chip: 0 1px 2px rgba(0, 0, 0, 0.06), 0 6px 16px -6px rgba(0, 0, 0, 0.14);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --c-shell: #161715;
-    --c-bg: #1d1e1b;
-    --c-surface: #22231f;
-    --c-surface-2: #282925;
-    --c-hover: #232421;
-    --c-sand: #4a4237;
-    --c-ink: #ece8e1;
-    --c-muted: #a9a59b;
-    --c-clay: #c2a586;
-    --c-clay-text: #c9ad8f;
-    --c-sage: #a4ad95;
-    --c-border: #31322e;
-    --c-border-strong: #45463f;
-    --c-on-ink: #1d1e1b;
-    --c-tint-warm: #23221e;
+    --c-shell: #0c0c0f;
+    --c-bg: #18181b;
+    --c-surface: #18181b;
+    --c-surface-2: #1e1e22;
+    --c-hover: #1e1e22;
+    --c-sand: #3a3a42;
+    --c-ink: #f4f4f5;
+    --c-muted: #a0a0a8;
+    --c-clay: #d4d4d8;
+    --c-clay-text: #d4d4d8;
+    --c-sage: #f4f4f5;
+    --c-border: #2a2a30;
+    --c-border-strong: #3a3a42;
+    --c-on-ink: #0c0c0f;
+    --c-tint-warm: #1e1e22;
     --shadow-chip: 0 1px 2px rgba(0, 0, 0, 0.4);
   }
 }

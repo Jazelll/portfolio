@@ -21,7 +21,7 @@ const SYSTEM_TOPICS = [
 export function HomeRegion() {
   return (
     <>
-      <header className="intro">
+      <header className="intro" data-layer="home-intro">
         <h1 className="page-title" id="region-home-title" tabIndex={-1}>Hi, I’m Althea.</h1>
         <p>
           I’m a UI/UX designer focused on creating <mark>intuitive, accessible, and scalable</mark> digital
@@ -37,7 +37,7 @@ export function HomeRegion() {
         </div>
       </header>
 
-      <section className="section" aria-labelledby="approach-title">
+      <section className="section" aria-labelledby="approach-title" data-layer="home-approach">
         <h2 id="approach-title" className="section-title">How I approach design</h2>
         <ol className="steps">
           {approach.map((s, i) => (
@@ -50,7 +50,7 @@ export function HomeRegion() {
         </ol>
       </section>
 
-      <section className="section" aria-labelledby="systems-title">
+      <section className="section" aria-labelledby="systems-title" data-layer="home-system">
         <h2 id="systems-title" className="section-title">Consistency starts with a system</h2>
         <p className="body-text">
           I help create scalable interface systems that make digital products more consistent, maintainable, and
@@ -71,7 +71,7 @@ const frames = FRAMES.map((f) => ({
   cards: f.cards.map((c) => ({ ...c, project: getProject(c.slug), index: cardIndex++ })),
 }))
 
-export function WorkRegion({ canvas, onOpen }) {
+export function WorkRegion({ canvas, editor, selected, onOpen }) {
   return (
     <>
       <header className="intro ws-work__intro">
@@ -86,6 +86,7 @@ export function WorkRegion({ canvas, onOpen }) {
         <section
           key={f.id}
           className="ws-frame"
+          data-layer={`frame-${f.id}`}
           aria-labelledby={`ws-frame-${f.id}`}
           style={{ '--x': `${f.x}px`, '--y': `${f.y}px`, '--w': `${f.width}px`, '--h': `${f.height}px` }}
         >
@@ -95,7 +96,15 @@ export function WorkRegion({ canvas, onOpen }) {
           </h3>
           <ul className="ws-frame__cards">
             {f.cards.map(({ project, index, ...layout }) => (
-              <ProjectCard key={project.slug} project={project} {...layout} index={index} canvas={canvas} onOpen={onOpen} />
+              <ProjectCard
+                key={project.slug}
+                project={project}
+                {...layout}
+                index={index}
+                canvas={canvas}
+                selectFirst={editor && selected !== `project-${project.slug}`}
+                onOpen={onOpen}
+              />
             ))}
           </ul>
         </section>
@@ -115,7 +124,7 @@ export function AboutRegion() {
   return (
     <div className="ws-about">
       <div className="ws-about__main">
-        <header className="intro">
+        <header className="intro" data-layer="about-intro">
           <h2 className="page-title" id="region-about-title" tabIndex={-1}>About me</h2>
           <p>
             I’m a UI/UX designer who enjoys turning ideas and complex requirements into <mark>clear, useful digital
@@ -133,7 +142,7 @@ export function AboutRegion() {
           <Link to="/work" className="text-link text-link--arrow">See my work <ArrowRight size={14} /></Link>
         </header>
 
-        <section className="section" aria-labelledby="skills-title">
+        <section className="section" aria-labelledby="skills-title" data-layer="about-skills">
           <h3 id="skills-title" className="section-title">Skills & capabilities</h3>
           <div className="skill-groups">
             {skills.map((s) => (
@@ -147,7 +156,7 @@ export function AboutRegion() {
           </div>
         </section>
 
-        <section className="section" aria-labelledby="edu-title">
+        <section className="section" aria-labelledby="edu-title" data-layer="about-education">
           <h3 id="edu-title" className="section-title">Education</h3>
           <div className="edu">
             <p className="edu__degree">{education.degree}</p>
@@ -156,7 +165,7 @@ export function AboutRegion() {
         </section>
       </div>
 
-      <section className="ws-about__side" aria-labelledby="exp-title">
+      <section className="ws-about__side" aria-labelledby="exp-title" data-layer="about-experience">
         <h3 id="exp-title" className="section-title">Experience</h3>
         <ol className="timeline">
           {experience.map((job) => (
@@ -180,7 +189,7 @@ export function AboutRegion() {
 export function ContactRegion() {
   return (
     <>
-      <header className="intro">
+      <header className="intro" data-layer="contact-intro">
         <h2 className="page-title" id="region-contact-title" tabIndex={-1}>Contact me</h2>
         <p>
           I’m always open to meaningful conversations, collaborations, and opportunities to create better digital
@@ -189,7 +198,7 @@ export function ContactRegion() {
         <p className="status"><span className="status__dot" aria-hidden="true" />Open to opportunities</p>
       </header>
 
-      <section className="contact-panel" aria-label="Contact details">
+      <section className="contact-panel" aria-label="Contact details" data-layer="contact-details">
         <a className="contact-panel__email" href={`mailto:${site.email}`}>{site.email}</a>
         <div className="btn-row">
           <a className="btn" href={`mailto:${site.email}?subject=Hello%20Althea`}>
@@ -199,7 +208,7 @@ export function ContactRegion() {
         </div>
       </section>
 
-      <ul className="link-list">
+      <ul className="link-list" data-layer="contact-links">
         <li>
           <a href={`mailto:${site.email}`} className="link-list__item">
             <MailIcon size={18} />

@@ -32,7 +32,7 @@
   background: var(--c-surface);
   border: 1px solid var(--c-border);
   border-radius: 1.2cqw;
-  box-shadow: 0 2.4cqw 5cqw -3cqw rgba(41, 43, 38, 0.28);
+  box-shadow: 0 2.4cqw 5cqw -3cqw rgba(0, 0, 0, 0.28);
 }
 
 .ill-logo { font-size: 3cqw; line-height: 1; }
@@ -42,13 +42,13 @@
 /* Abstract photo tile */
 .photo { display: block; position: relative; overflow: hidden; border-radius: 0.6cqw; }
 .photo svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.photo--clay { background: #e4d3bf; }
+.photo--clay { background: #d4d4d4; }
 .photo--clay .photo__hill { fill: var(--c-clay); }
-.photo--clay .photo__sun { fill: #f5ece0; }
-.photo--sage { background: #d6dacb; }
+.photo--clay .photo__sun { fill: #f5f5f5; }
+.photo--sage { background: #e5e5e5; }
 .photo--sage .photo__hill { fill: var(--c-sage); }
-.photo--sage .photo__sun { fill: #eef0e7; }
-.photo--sand { background: #ece2d5; }
+.photo--sage .photo__sun { fill: #fafafa; }
+.photo--sand { background: #ececec; }
 .photo--sand .photo__hill { fill: var(--c-sand); }
 .photo--sand .photo__sun { fill: var(--c-clay); }
 
@@ -181,7 +181,7 @@
   background: var(--c-surface);
   border: 0.5cqw solid var(--c-ink);
   border-radius: 2.6cqw;
-  box-shadow: 0 2.4cqw 5cqw -2.4cqw rgba(41, 43, 38, 0.35);
+  box-shadow: 0 2.4cqw 5cqw -2.4cqw rgba(0, 0, 0, 0.35);
   z-index: 2;
 }
 .fin-phone__actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.6cqw; margin-block: 0.8cqw; }
@@ -197,7 +197,7 @@
   background: var(--c-ink);
   color: var(--c-on-ink);
   border-radius: 1.2cqw;
-  box-shadow: 0 2.4cqw 5cqw -2.4cqw rgba(41, 43, 38, 0.4);
+  box-shadow: 0 2.4cqw 5cqw -2.4cqw rgba(0, 0, 0, 0.4);
 }
 .fin-teller__title { font-family: var(--f-display); font-weight: 600; font-size: 1.45cqw; letter-spacing: -0.01em; }
 .fin-teller__grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.9cqw; }
@@ -208,10 +208,10 @@
   font-size: 1.15cqw;
   text-align: center;
 }
-.fin-teller__grid span:first-child { background: var(--c-clay); border-color: var(--c-clay); color: #1f201c; }
+.fin-teller__grid span:first-child { background: var(--c-clay); border-color: var(--c-clay); color: var(--c-on-ink); }
 
 @media (prefers-color-scheme: dark) {
-  .photo--clay { background: #5a4c3d; }
-  .photo--sage { background: #454b3d; }
-  .photo--sand { background: #50473b; }
+  .photo--clay { background: #3a3a42; }
+  .photo--sage { background: #2f2f35; }
+  .photo--sand { background: #34343a; }
 }

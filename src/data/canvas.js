@@ -16,6 +16,27 @@ export const REGIONS = [
 
 export const regionForPath = (pathname) => REGIONS.find((r) => r.path === pathname)
 
+// Named groups inside the text regions, shown in the editor's Layers panel. Each id matches a
+// `data-layer` attribute in regions.jsx. Work's layers come from FRAMES below.
+export const REGION_LAYERS = {
+  home: [
+    { id: 'home-intro', name: 'Intro' },
+    { id: 'home-approach', name: 'How I approach design' },
+    { id: 'home-system', name: 'Consistency starts with a system' },
+  ],
+  about: [
+    { id: 'about-intro', name: 'About me' },
+    { id: 'about-skills', name: 'Skills & capabilities' },
+    { id: 'about-education', name: 'Education' },
+    { id: 'about-experience', name: 'Experience' },
+  ],
+  contact: [
+    { id: 'contact-intro', name: 'Contact me' },
+    { id: 'contact-details', name: 'Contact details' },
+    { id: 'contact-links', name: 'Links' },
+  ],
+}
+
 // Inside the Work region. Frames sit below the region's heading; cards sit inside their frame.
 //
 // variant: 'feature' -> large, for the lead case studies
