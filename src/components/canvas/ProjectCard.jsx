@@ -1,12 +1,13 @@
 import { useId } from 'react'
 import ProjectVisual from '../ProjectVisual'
 import TransitionLink from '../TransitionLink'
+import { catalogueNumber } from '../../data/archive'
 
 // One project on the canvas. Position and size come in as CSS variables so the same markup
 // can sit on the canvas (desktop/tablet) or flow as a list (mobile).
 // In the desktop editor a click first selects the card (`selectFirst`); a second click, a double-click,
 // or Enter opens it.
-export default function ProjectCard({ project, variant, x, y, width, index, canvas, selectFirst, onOpen }) {
+export default function ProjectCard({ project, variant, x, y, width, index, canvas, dimmed, selectFirst, onOpen }) {
   const id = useId()
   const sizes = canvas ? `${width}px` : '(min-width: 560px) 50vw, 100vw'
 
@@ -16,6 +17,7 @@ export default function ProjectCard({ project, variant, x, y, width, index, canv
       data-ws-item
       data-slug={project.slug}
       data-layer={`project-${project.slug}`}
+      data-dimmed={dimmed || undefined}
       style={{ '--x': `${x}px`, '--y': `${y}px`, '--w': `${width}px`, '--i': index }}
     >
       <TransitionLink
@@ -40,11 +42,12 @@ export default function ProjectCard({ project, variant, x, y, width, index, canv
         </div>
 
         <div className="ws-card__caption">
-          <span className="ws-card__num" aria-hidden="true">{project.number}</span>
+          <span className="ws-card__num" aria-hidden="true">{catalogueNumber(project)}</span>
           <span className="ws-card__title" id={`${id}-title`}>{project.title}</span>
           <span className="ws-card__meta" id={`${id}-meta`}>
             {project.category} · {project.year}
           </span>
+          <span className="ws-card__platform" aria-hidden="true">{project.platform}</span>
         </div>
 
         <div className="ws-card__peek" id={`${id}-peek`}>

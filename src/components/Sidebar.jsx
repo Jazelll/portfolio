@@ -1,14 +1,9 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { NavLink, useLocation } from 'react-router-dom'
+import { Link, useLocation } from 'react-router-dom'
 import { site } from '../data/site'
-import { AboutIcon, ArrowRight, GitHubIcon, HomeIcon, LinkedInIcon, MailIcon, SidebarIcon, WorkIcon } from './icons'
-
-const NAV = [
-  { to: '/', label: 'Home', icon: HomeIcon, end: true },
-  { to: '/about', label: 'About', icon: AboutIcon },
-  { to: '/work', label: 'Work', icon: WorkIcon },
-  { to: '/contact', label: 'Contact', icon: MailIcon },
-]
+import { REGIONS, regionForPath } from '../data/canvas'
+import ThemeToggle from './ThemeToggle'
+import { ArrowRight, GitHubIcon, LinkedInIcon, MailIcon, SidebarIcon } from './icons'
 
 const SOCIALS = [
   { href: site.linkedin, label: 'LinkedIn', icon: LinkedInIcon },
@@ -27,14 +22,16 @@ const readCollapsed = () => {
   }
 }
 
-// Fixed sidebar on desktop that can collapse to an icon rail; an off-canvas panel behind a floating
-// toggle on smaller screens. The collapsed state lives on <html data-sidebar> so the shell's offset
-// (--sidebar-w) follows it.
+// Fixed sidebar (shown beside case studies; the canvas editor replaces it on desktop), styled as the
+// portfolio's table of contents, which can collapse to a numbered rail; an off-canvas panel behind a floating toggle on smaller screens. The collapsed state
+// lives on <html data-sidebar> so the shell's offset (--sidebar-w) follows it.
 export default function Sidebar() {
   const [open, setOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(readCollapsed)
   const { pathname } = useLocation()
   const toggleRef = useRef(null)
+  // The canvas keeps the URL on the section in view, so the URL is the reading position.
+  const active = regionForPath(pathname)?.id ?? (pathname.startsWith('/work/') ? 'work' : null)
 
   useEffect(() => setOpen(false), [pathname])
 
@@ -46,9 +43,6 @@ export default function Sidebar() {
       /* ignore */
     }
   }, [collapsed])
-
-  // Native tooltips stand in for the hidden labels on the icon rail.
-  const tip = (label) => (collapsed ? label : undefined)
 
   useEffect(() => {
     if (!open) return
@@ -62,17 +56,20 @@ export default function Sidebar() {
     return () => window.removeEventListener('keydown', onKey)
   }, [open])
 
+  // Native tooltips stand in for the hidden labels on the rail.
+  const tip = (label) => (collapsed ? label : undefined)
+
   return (
     <>
       <aside id="sidebar" className={`sidebar${open ? ' is-open' : ''}`} aria-label="Site">
         <div className="side-head">
-          <NavLink to="/" className="profile" aria-label={`${site.name}, home`} title={tip(site.name)}>
+          <Link to="/" className="profile" aria-label={`${site.name}, home`} title={tip(site.name)}>
             <span className="profile__avatar" aria-hidden="true">AR</span>
             <span className="profile__text">
               <span className="profile__name">{site.name}</span>
               <span className="profile__role">{site.role}</span>
             </span>
-          </NavLink>
+          </Link>
           <button
             type="button"
             className="side-collapse"
@@ -86,17 +83,23 @@ export default function Sidebar() {
           </button>
         </div>
 
-        <nav aria-label="Primary">
-          <ul className="side-nav">
-            {NAV.map(({ to, label, icon: I, end }) => (
-              <li key={to}>
-                <NavLink to={to} end={end} className="side-nav__link" title={tip(label)}>
-                  <I className="side-nav__icon" />
-                  <span className="side-nav__label">{label}</span>
-                </NavLink>
+        <nav aria-label="Contents" className="side-group">
+          <p className="side-group__title">Contents</p>
+          <ol className="side-nav side-toc">
+            {REGIONS.map((s) => (
+              <li key={s.id}>
+                <Link
+                  to={s.path}
+                  className={`side-nav__link side-toc__link${active === s.id ? ' active' : ''}`}
+                  aria-current={active === s.id ? 'location' : undefined}
+                  title={tip(s.label)}
+                >
+                  <span className="side-toc__num" aria-hidden="true">{s.number}</span>
+                  <span className="side-nav__label">{s.label}</span>
+                </Link>
               </li>
             ))}
-          </ul>
+          </ol>
         </nav>
 
         <div className="side-group">
@@ -120,6 +123,10 @@ export default function Sidebar() {
               )
             })}
           </ul>
+        </div>
+
+        <div className="side-group">
+          <ThemeToggle withLabel className="side-nav__link side-theme" />
         </div>
 
         <a href={`mailto:${site.email}`} className="side-cta" title={tip('Email me')}>

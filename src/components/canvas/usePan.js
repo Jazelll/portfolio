@@ -16,7 +16,7 @@ const EDGE = 64 // how far the board may be pulled past its edges, in screen px
 const DRAG_THRESHOLD = 6 // px of movement before a press becomes a drag (below it, clicks go through)
 const REVEAL_MARGIN = 32
 const LABEL_ROOM = 48 // space above a top-aligned rect for the name label that sits outside it
-export const MIN_ZOOM = 0.25
+export const MIN_ZOOM = 0.1
 export const MAX_ZOOM = 2
 
 const easeOut = (t) => 1 - Math.pow(1 - t, 4)

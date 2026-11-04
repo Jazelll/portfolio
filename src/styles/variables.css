@@ -1,65 +1,150 @@
+/* ================= Design tokens: Editorial Product Archive =================
+   One neutral identity: warm off-white page, white surfaces for imagery, ink type, hairline rules.
+   No accent hue: emphasis comes from type, scale and inversion (ink fill). Project colours only ever
+   appear inside their own screenshots.
+
+   Older token names (--c-shell, --c-clay, --t-title, --measure…) are kept as aliases because the canvas
+   view and the illustrations still use them. */
+
 :root {
   color-scheme: light dark;
 
-  /* Palette — black and white: one background, one ink, a gray ramp between. Emphasis comes from
-     inversion (ink fill, white text), never from an accent hue. Token names are kept from the
-     earlier warm palette so components didn't have to change. */
-  --c-shell: #f5f5f5; /* canvas and shell backdrop */
-  --c-bg: #ffffff;
-  --c-surface: #ffffff; /* used by the illustrations */
-  --c-surface-2: #f5f5f5;
-  --c-hover: #fafafa;
-  --c-sand: #d4d4d4;
-  --c-ink: #0a0a0a;
-  --c-muted: #737373;
-  --c-clay: #404040; /* former accent: now a dark gray for small markers */
-  --c-clay-text: #404040;
-  --c-sage: #0a0a0a; /* status dot */
-  --c-border: #e9e9e9;
-  --c-border-strong: #d4d4d4;
+  /* ---------- Colour ---------- */
+  --c-page: #f5f5f2;          /* background */
+  --c-bg: #ffffff;            /* surface: frames, previews, controls */
+  --c-surface-2: #eeeeeb;     /* muted surface */
+  --c-hover: #fafaf8;
+  --c-ink: #0a0a0a;           /* primary text */
+  --c-muted: #6b6b68;         /* secondary text; 4.9:1 on the page (the brief's #737373 falls just under AA) */
+  --c-border: #e5e5e2;
+  --c-border-strong: #d4d4d0;
   --c-on-ink: #ffffff;
-  --c-tint-warm: #fafafa; /* illustration backdrops */
 
-/* Type */
+  --c-shell: var(--c-page);
+  --c-surface: var(--c-bg);
+  --c-sand: #d4d4d0;
+  --c-clay: #404040;          /* small markers in the illustrations */
+  --c-clay-text: #404040;
+  --c-sage: var(--c-ink);     /* status dot */
+  --c-tint-warm: #fafaf8;     /* illustration backdrops */
+  --c-photo-1: #d4d4d4;       /* abstract photo tiles in the illustrations */
+  --c-photo-2: #e5e5e5;
+  --c-photo-3: #ececec;
+  --c-sticky: #f5dc6a;        /* sticky notes: the one warm tint on the board, set to stand off the page */
+  --c-sticky-ink: #1c1703;
+
+  /* ---------- Type ---------- */
   --f-display: 'Manrope', system-ui, sans-serif;
   --f-body: 'DM Sans', system-ui, sans-serif;
 
-  --t-title: clamp(1.875rem, 1.5rem + 1.6vw, 2.5rem);
-  --t-section: 1.25rem;
+  --t-display: clamp(2.5rem, 1.5rem + 3.2vw, 4.4rem);
+  --t-h1: clamp(2.1rem, 1.4rem + 2.6vw, 3.5rem);
+  --t-h2: clamp(1.6rem, 1.2rem + 1.5vw, 2.4rem);
+  --t-h3: 1.25rem;
+  --t-body-lg: 1.125rem;
   --t-body: 1rem;
   --t-small: 0.875rem;
+  --t-caption: 0.8125rem;
+  --t-meta: 0.6875rem;        /* uppercase metadata labels */
+  --t-button: 0.875rem;
+  --tracking-meta: 0.09em;
+
+  --t-title: var(--t-h1);
+  --t-section: var(--t-h3);
   --t-xs: 0.75rem;
 
-  /* Layout */
+  /* ---------- Spacing (4px base) ---------- */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 24px;
+  --s-6: 32px;
+  --s-7: 48px;
+  --s-8: 64px;
+  --s-9: 96px;
+  --s-10: 144px;
+
+  /* ---------- Layout ---------- */
   --sidebar-w: 15rem;
+  --content-max: 78rem;       /* editorial grid */
+  --text-max: 40rem;          /* reading measure */
+  --gutter: clamp(20px, 4vw, 56px);
+  --grid-gap: clamp(16px, 2vw, 28px);
+  --section-gap: clamp(96px, 6rem + 4vw, 176px);
+
   --measure: 46rem;
   --section: clamp(3.5rem, 2.5rem + 3vw, 5rem);
 
-  --r-sm: 6px;
-  --r-md: 10px;
-  --r-lg: 16px;
+  /* Square-leaning: frames, not rounded cards */
+  --r-sm: 4px;
+  --r-md: 6px;
+  --r-lg: 10px;
 
-  --shadow-chip: 0 1px 2px rgba(0, 0, 0, 0.06), 0 6px 16px -6px rgba(0, 0, 0, 0.14);
+  --shadow-chip: 0 1px 2px rgba(0, 0, 0, 0.05), 0 6px 16px -8px rgba(0, 0, 0, 0.12);
+  --shadow-frame: 0 24px 48px -32px rgba(0, 0, 0, 0.28);
   --ease: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+/* Dark theme: follows the system unless the visitor picked a theme (html[data-theme], set by the toggle and
+   restored before first paint in index.html). The values are repeated because a media query and an
+   attribute selector can't share one rule. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --c-shell: #0c0c0f;
-    --c-bg: #18181b;
-    --c-surface: #18181b;
-    --c-surface-2: #1e1e22;
-    --c-hover: #1e1e22;
-    --c-sand: #3a3a42;
-    --c-ink: #f4f4f5;
-    --c-muted: #a0a0a8;
-    --c-clay: #d4d4d8;
-    --c-clay-text: #d4d4d8;
-    --c-sage: #f4f4f5;
-    --c-border: #2a2a30;
-    --c-border-strong: #3a3a42;
-    --c-on-ink: #0c0c0f;
-    --c-tint-warm: #1e1e22;
+  :root:not([data-theme='light']) {
+    --c-page: #0e0e0d;
+    --c-bg: #171716;
+    --c-surface-2: #1f1f1d;
+    --c-hover: #1b1b1a;
+    --c-ink: #f2f2ef;
+    --c-muted: #a3a39e;
+    --c-border: #2a2a28;
+    --c-border-strong: #3a3a37;
+    --c-on-ink: #0e0e0d;
+
+    --c-sand: #3a3a37;
+    --c-clay: #d4d4d0;
+    --c-clay-text: #d4d4d0;
+    --c-tint-warm: #1f1f1d;
     --shadow-chip: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-frame: 0 24px 48px -32px rgba(0, 0, 0, 0.8);
+    --c-photo-1: #3a3a42;
+    --c-photo-2: #2f2f35;
+    --c-photo-3: #34343a;
+    --c-sticky: #e9cf5c;
+    --c-sticky-ink: #1c1703;
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --c-page: #0e0e0d;
+  --c-bg: #171716;
+  --c-surface-2: #1f1f1d;
+  --c-hover: #1b1b1a;
+  --c-ink: #f2f2ef;
+  --c-muted: #a3a39e;
+  --c-border: #2a2a28;
+  --c-border-strong: #3a3a37;
+  --c-on-ink: #0e0e0d;
+
+  --c-sand: #3a3a37;
+  --c-clay: #d4d4d0;
+  --c-clay-text: #d4d4d0;
+  --c-tint-warm: #1f1f1d;
+  --shadow-chip: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-frame: 0 24px 48px -32px rgba(0, 0, 0, 0.8);
+  --c-photo-1: #3a3a42;
+  --c-photo-2: #2f2f35;
+  --c-photo-3: #34343a;
+  --c-sticky: #e9cf5c;
+  --c-sticky-ink: #1c1703;
+}
+
+:root[data-theme='light'] { color-scheme: light; }
+
+/* Brief crossfade while switching themes (the toggle adds this class for a moment). */
+html.theme-fade *,
+html.theme-fade *::before,
+html.theme-fade *::after {
+  transition: background-color 0.35s, color 0.35s, border-color 0.35s, fill 0.35s !important;
 }

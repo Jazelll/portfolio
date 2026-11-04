@@ -1,53 +1,87 @@
 import { Link, useParams } from 'react-router-dom'
 import { getAdjacent, getProject } from '../data/projects'
+import { catalogueNumber } from '../data/archive'
 import usePageMeta from '../components/usePageMeta'
 import Reveal from '../components/Reveal'
 import Img from '../components/Img'
 import ProjectVisual from '../components/ProjectVisual'
 import PageView from '../components/PageView'
 import TransitionLink from '../components/TransitionLink'
+import { BrowserFrame, SpecList } from '../components/sections/primitives'
 import { MemoireFeature } from '../components/illustrations/MemoireIllustration'
 import { ArrowLeft, ArrowRight } from '../components/icons'
 import NotFound from './NotFound'
 
-// Single-column case study. Each block renders only when the project has content for it.
+// Case study as a numbered chapter sheet: chapter label in the left columns, content from column 4.
+// Chapters render only when the project has real content for them; nothing is filled in.
 
-function Block({ title, children }) {
+function Chapter({ id, number, title, children }) {
   return (
-    <Reveal as="section" className="cs-block">
-      <h2 className="section-title">{title}</h2>
-      {children}
+    <Reveal as="section" className="cs-chapter" aria-labelledby={`cs-${id}`}>
+      <h2 className="cs-chapter__label" id={`cs-${id}`}>
+        <span className="meta-label">{number}</span>
+        {title}
+      </h2>
+      <div className="cs-chapter__body">{children}</div>
     </Reveal>
   )
 }
 
-function Features({ features }) {
-  if (features.some((f) => f.image)) {
-    return (
-      <div className="cs-shots">
-        {features.map((f) => (
-          <figure key={f.title} className="cs-shot">
-            <div className="cs-shot__img"><Img image={f.image} alt={f.alt} sizes="(min-width: 720px) 1100px, 180vw" /></div>
-            <figcaption>
-              <h3 className="cs-shot__title">{f.title}</h3>
-              <p className="body-text">{f.description}</p>
-            </figcaption>
-          </figure>
-        ))}
-      </div>
-    )
-  }
-
+function FinalDesign({ project }) {
+  const { features, gallery } = project
   return (
-    <ul className={`cs-features${features.some((f) => f.illustration) ? ' cs-features--ill' : ''}`}>
-      {features.map((f) => (
-        <li key={f.title} className="cs-feature">
-          {f.illustration && <MemoireFeature name={f.illustration} />}
-          <h3 className="cs-feature__title">{f.title}</h3>
-          <p className="body-text">{f.description}</p>
-        </li>
+    <>
+      {features?.some((f) => f.image) && (
+        <div className="cs-shots">
+          {features.map((f, i) => (
+            <figure key={f.title} className="cs-shot">
+              <div className="cs-shot__img">
+                <Img image={f.image} alt={f.alt} sizes="(min-width: 1024px) 640px, 100vw" />
+              </div>
+              <figcaption className="cs-shot__caption">
+                <span className="meta-label">Screen {String(i + 1).padStart(2, '0')}</span>
+                <h3 className="cs-shot__title">{f.title}</h3>
+                <p>{f.description}</p>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      )}
+
+      {features?.some((f) => f.illustration) && (
+        <ul className="cs-ill-features">
+          {features.map((f) => (
+            <li key={f.title}>
+              <MemoireFeature name={f.illustration} />
+              <h3 className="cs-feature__title">{f.title}</h3>
+              <p>{f.description}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {features && !features.some((f) => f.image || f.illustration) && (
+        <ol className="cs-feature-list">
+          {features.map((f, i) => (
+            <li key={f.title}>
+              <span className="meta-label">{String(i + 1).padStart(2, '0')}</span>
+              <h3 className="cs-feature__title">{f.title}</h3>
+              <p>{f.description}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+
+      {gallery?.map((g) => (
+        <PageView
+          key={g.caption}
+          image={g.image}
+          alt={g.alt}
+          caption={g.caption}
+          label={`${project.title.toLowerCase().replace(/\s+/g, '')} · homepage`}
+        />
       ))}
-    </ul>
+    </>
   )
 }
 
@@ -64,118 +98,109 @@ export default function ProjectDetail() {
   if (!project) return <NotFound />
 
   const { prev, next } = getAdjacent(slug)
-  const meta = [
-    ['Role', project.role.join(', ')],
-    ['Platform', project.platform],
-    ['Industry', project.industry],
-    ['Year', project.year],
-    ['Duration', project.duration],
-    ['Team', project.team.join(', ')],
-  ].filter(([, v]) => v)
+  const hasFinal = project.features || project.gallery
+  const isPage = Boolean(project.gallery)
+
+  const chapters = [
+    { id: 'overview', title: 'Overview', content: <p className="cs-lead">{project.overview}</p> },
+    {
+      id: 'context',
+      title: 'Context',
+      content: (project.problem || project.goals) && (
+        <>
+          {project.problem && <p className="cs-text">{project.problem}</p>}
+          {project.goals && (
+            <div className="cs-goals">
+              <p className="meta-label">Design goals</p>
+              <ol>
+                {project.goals.map((g, i) => (
+                  <li key={g}><span className="meta-label">{String(i + 1).padStart(2, '0')}</span>{g}</li>
+                ))}
+              </ol>
+            </div>
+          )}
+        </>
+      ),
+    },
+    {
+      id: 'process',
+      title: project.process ? `Process — ${project.process.method}` : 'Process',
+      content: project.process && (
+        <ol className="cs-process">
+          {project.process.steps.map((s, i) => (
+            <li key={s.title}>
+              <span className="meta-label">{String(i + 1).padStart(2, '0')}</span>
+              <h3 className="cs-process__title">{s.title}</h3>
+              <p>{s.description}</p>
+            </li>
+          ))}
+        </ol>
+      ),
+    },
+    { id: 'direction', title: 'Design direction', content: project.solution && <p className="cs-text">{project.solution}</p> },
+    {
+      id: 'final',
+      title: project.features?.some((f) => f.image) || project.gallery ? 'Final design' : 'Key features',
+      content: hasFinal && <FinalDesign project={project} />,
+    },
+    { id: 'reflection', title: 'My contribution', content: project.reflection && <p className="cs-text">{project.reflection}</p> },
+  ].filter((c) => c.content)
 
   return (
-    <article className="page">
-      <Reveal as="header" className="intro">
+    <article className="cs">
+      <header className="cs-head">
         <TransitionLink to="/work" state={{ restore: true }} className="text-link text-link--back">
-          <ArrowLeft size={14} /> Back to work
+          <ArrowLeft size={14} /> Back to selected work
         </TransitionLink>
-        <h1 className="page-title">{project.title}</h1>
-        <p>{project.subtitle}</p>
-        <ul className="chips">
-          <li className="chip">{project.category}</li>
-          <li className="chip">{project.year}</li>
-        </ul>
-      </Reveal>
+        <p className="meta-label cs-head__kicker">{project.category} / {catalogueNumber(project)}</p>
+        <h1 className="cs-head__title">{project.title}</h1>
+        <p className="cs-head__sub">{project.subtitle}</p>
+      </header>
 
-      {/* Not wrapped in Reveal: the hero is the shared element arriving from a canvas card. */}
-      <div className="cs-hero">
-        <ProjectVisual project={project} priority sizes="(min-width: 1024px) 760px, 100vw" />
+      {/* Not wrapped in Reveal: the hero is the shared element arriving from the catalogue. */}
+      <div className={`cs-hero${isPage ? ' cs-hero--page' : ''}`}>
+        {isPage ? (
+          <BrowserFrame label={`${project.title.toLowerCase()} · landing page`}>
+            <ProjectVisual project={project} priority sizes="(min-width: 1200px) 1200px, 100vw" />
+          </BrowserFrame>
+        ) : (
+          <ProjectVisual project={project} priority sizes="(min-width: 1200px) 1200px, 100vw" />
+        )}
       </div>
       {project.illustrative && (
-        <p className="note">
+        <p className="ar-illustrative meta-label">
           {project.confidential
-            ? 'Professional client work. To protect client confidentiality, no real screens, names, or data are shown; visuals here are abstracted illustrations.'
-            : 'Final screens for this ongoing project are not yet public. Visuals here are illustrative concepts, not production screenshots.'}
+            ? 'Professional client work. To protect client confidentiality, no real screens, names, or data are shown; visuals are abstracted illustrations.'
+            : 'Final screens for this ongoing project are not yet public. Visuals are illustrative concepts, not production screenshots.'}
         </p>
       )}
 
-      <Reveal>
-        <dl className="meta-grid">
-          {meta.map(([k, v]) => (
-            <div key={k}>
-              <dt>{k}</dt>
-              <dd>{v}</dd>
-            </div>
-          ))}
-        </dl>
-      </Reveal>
+      <SpecList
+        className="cs-spec"
+        rows={[
+          ['Role', project.role.join(', ')],
+          ['Platform', project.platform],
+          ['Industry', project.industry],
+          ['Year', project.year],
+          ['Duration', project.duration],
+          ['Team', project.team.join(', ')],
+        ]}
+      />
 
-      <Block title="Overview">
-        <p className="body-text">{project.overview}</p>
-      </Block>
+      {chapters.map((c, i) => (
+        <Chapter key={c.id} id={c.id} number={String(i + 1).padStart(2, '0')} title={c.title}>
+          {c.content}
+        </Chapter>
+      ))}
 
-      {project.problem && (
-        <Block title="The problem">
-          <p className="body-text">{project.problem}</p>
-        </Block>
-      )}
-
-      {project.solution && (
-        <Block title="The response">
-          <p className="body-text">{project.solution}</p>
-        </Block>
-      )}
-
-      {project.goals && (
-        <Block title="Design goals">
-          <ol className="goal-list">
-            {project.goals.map((g) => <li key={g}>{g}</li>)}
-          </ol>
-        </Block>
-      )}
-
-      {project.process && (
-        <Block title={`Process · ${project.process.method}`}>
-          <ol className="steps steps--stack">
-            {project.process.steps.map((s, i) => (
-              <li key={s.title} className="step">
-                <span className="step__num">{String(i + 1).padStart(2, '0')}</span>
-                <h3 className="step__title">{s.title}</h3>
-                <p className="step__desc">{s.description}</p>
-              </li>
-            ))}
-          </ol>
-        </Block>
-      )}
-
-      {project.features && (
-        <Block title={project.features.some((f) => f.image) ? 'Final design' : 'Key features'}>
-          <Features features={project.features} />
-        </Block>
-      )}
-
-      {project.gallery && (
-        <Block title="Final design">
-          {project.gallery.map((g) => (
-            <PageView key={g.caption} image={g.image} alt={g.alt} caption={g.caption} label={`${project.title.toLowerCase().replace(/\s+/g, '')} · homepage`} />
-          ))}
-        </Block>
-      )}
-
-      {project.reflection && (
-        <Block title="My contribution">
-          <p className="body-text">{project.reflection}</p>
-        </Block>
-      )}
-
-      <nav className="pager" aria-label="More projects">
-        <Link to={`/work/${prev.slug}`} className="pager__link">
-          <span className="pager__label"><ArrowLeft size={14} /> Previous</span>
-          <span className="pager__title">{prev.title}</span>
+      <nav className="cs-pager" aria-label="More projects">
+        <Link to={`/work/${prev.slug}`} className="cs-pager__link">
+          <span className="meta-label"><ArrowLeft size={12} /> Previous · {catalogueNumber(prev)}</span>
+          <span className="cs-pager__title">{prev.title}</span>
         </Link>
-        <Link to={`/work/${next.slug}`} className="pager__link pager__link--next">
-          <span className="pager__label">Next <ArrowRight size={14} /></span>
-          <span className="pager__title">{next.title}</span>
+        <Link to={`/work/${next.slug}`} className="cs-pager__link cs-pager__link--next">
+          <span className="meta-label">Next · {catalogueNumber(next)} <ArrowRight size={12} /></span>
+          <span className="cs-pager__title">{next.title}</span>
         </Link>
       </nav>
     </article>

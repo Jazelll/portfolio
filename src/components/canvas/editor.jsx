@@ -4,6 +4,7 @@ import { getProject } from '../../data/projects'
 import { site } from '../../data/site'
 import { FRAMES, REGIONS, REGION_LAYERS } from '../../data/canvas'
 import TransitionLink from '../TransitionLink'
+import ThemeToggle from '../ThemeToggle'
 import { ArrowRight, GitHubIcon, LinkedInIcon, MailIcon, SidebarIcon } from '../icons'
 
 // Desktop editor chrome around the site canvas, styled after a design tool: a toolbar, a Pages + Layers
@@ -24,8 +25,8 @@ function buildTree() {
           return { id: `project-${c.slug}`, name: project.title, kind: 'project', project }
         }),
       }))
-      : REGION_LAYERS[r.id].map((l) => ({ ...l, kind: 'group' }))
-    return { id: `region-${r.id}`, name: r.label, kind: 'region', region: r, children }
+      : REGION_LAYERS[r.id]
+    return { id: `region-${r.id}`, name: `${r.number} ${r.label}`, kind: 'region', region: r, children }
   })
 }
 
@@ -42,7 +43,7 @@ export const LAYER_INDEX = (() => {
   return map
 })()
 
-const KIND_LABEL = { region: 'Section', frame: 'Frame', group: 'Group', project: 'Project' }
+const KIND_LABEL = { region: 'Section frame', frame: 'Frame', group: 'Group', project: 'Project' }
 
 function LayerIcon({ kind }) {
   const paths = {
@@ -74,7 +75,7 @@ export function Toolbar({ region, zoom, onZoomIn, onZoomOut, onZoomReset, onFit,
         >
           <SidebarIcon size={16} />
         </button>
-        <NavLink to="/" className="ed-mark" aria-label={`${site.name}, home`}>AR</NavLink>
+        <NavLink to="/" className="ed-mark" aria-label={`${site.name}, introduction`}>AR</NavLink>
       </div>
 
       <p className="ed-toolbar__doc">
@@ -92,6 +93,7 @@ export function Toolbar({ region, zoom, onZoomIn, onZoomOut, onZoomReset, onFit,
           <button type="button" className="ed-icon-btn" onClick={onZoomIn} aria-label="Zoom in" title="Zoom in (+)">+</button>
           <button type="button" className="ed-btn ed-btn--quiet" onClick={onFit} title="Zoom to fit (Shift+1)">Fit</button>
         </div>
+        <ThemeToggle className="ed-icon-btn" />
         {fullscreen.supported && (
           <button type="button" className="ed-btn ed-btn--quiet" aria-pressed={fullscreen.active} onClick={fullscreen.toggle}>
             {fullscreen.active ? 'Exit' : 'Present'}
@@ -197,7 +199,7 @@ export function LayersPanel({ regionId, selectedId, onSelect, onHover }) {
           {REGIONS.map((r) => (
             <li key={r.id}>
               <NavLink to={r.path} end className="ed-page">
-                <span className="ed-page__check" aria-hidden="true">✓</span>
+                <span className="ed-page__num" aria-hidden="true">{r.number}</span>
                 {r.label}
               </NavLink>
             </li>
@@ -285,7 +287,11 @@ function useTokens() {
     read()
     const mq = window.matchMedia('(prefers-color-scheme: dark)')
     mq.addEventListener('change', read)
-    return () => mq.removeEventListener('change', read)
+    window.addEventListener('themechange', read)
+    return () => {
+      mq.removeEventListener('change', read)
+      window.removeEventListener('themechange', read)
+    }
   }, [])
   return values
 }

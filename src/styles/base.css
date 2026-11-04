@@ -20,7 +20,7 @@ img { display: block; max-width: 100%; height: auto; }
 button { font: inherit; color: inherit; }
 ul, ol { margin: 0; padding: 0; list-style: none; }
 p, figure, dl, dd { margin: 0; }
-h1, h2, h3 { margin: 0; font-family: var(--f-display); font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; text-wrap: balance; }
+h1, h2, h3, h4 { margin: 0; font-family: var(--f-display); font-weight: 700; letter-spacing: -0.025em; line-height: 1.15; text-wrap: balance; }
 p { text-wrap: pretty; }
 
 ::selection { background: var(--c-ink); color: var(--c-on-ink); }
@@ -87,7 +87,7 @@ mark {
   gap: 8px;
   min-height: 44px;
   padding: 0 18px;
-  border-radius: 999px;
+  border-radius: var(--r-sm);
   border: 1px solid var(--c-ink);
   background: var(--c-ink);
   color: var(--c-on-ink);
@@ -96,12 +96,13 @@ mark {
   font-size: var(--t-small);
   text-decoration: none;
   cursor: pointer;
-  box-shadow: var(--shadow-chip);
-  transition: transform 0.2s, box-shadow 0.2s;
+  transition: opacity 0.2s, border-color 0.2s;
 }
-.btn:hover { transform: translateY(-1px); }
-.btn--ghost { background: var(--c-bg); color: var(--c-ink); border-color: var(--c-border); }
-.btn--ghost:hover { border-color: var(--c-border-strong); }
+.btn:hover { opacity: 0.86; }
+.btn svg { transition: transform 0.3s var(--ease); }
+.btn:hover svg { transform: translateX(3px); }
+.btn--ghost { background: transparent; color: var(--c-ink); border-color: var(--c-border-strong); }
+.btn--ghost:hover { opacity: 1; border-color: var(--c-ink); }
 
 .chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .chips--loose { gap: 8px; }

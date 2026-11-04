@@ -8,6 +8,8 @@ import './styles/chrome.css'
 import './styles/projects.css'
 import './styles/illustrations.css'
 import './styles/canvas.css'
+import './styles/sections.css'
+import './styles/case-study.css'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

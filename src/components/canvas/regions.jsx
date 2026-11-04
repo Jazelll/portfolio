@@ -1,66 +1,82 @@
-import { Link } from 'react-router-dom'
-import { getProject } from '../../data/projects'
-import { approach, education, experience, site, skills } from '../../data/site'
-import { FRAMES, NOTE } from '../../data/canvas'
-import CopyEmail from '../CopyEmail'
+import { useState } from 'react'
+import { approach } from '../../data/site'
+import { getProject, projects } from '../../data/projects'
+import { FRAMES, FRAMES_HEIGHT, NOTE } from '../../data/canvas'
+import { CATALOGUE_FILTERS } from '../../data/archive'
 import ProjectCard from './ProjectCard'
-import { ArrowRight, ArrowUpRight, LinkedInIcon, MailIcon } from '../icons'
+import { ARTIFACTS } from '../sections/Approach'
+import { ComponentLibrary, Contribution, Foundations, InteractionStates, Platforms, Tokens } from '../sections/SystemSheet'
+import { AboutIntro, CapabilitySheet, Credential, ExperienceTimeline } from '../sections/Profile'
+import { FeaturedWork, OpeningStatement, ProfileFacts } from '../sections/Intro'
+import { ContactDetails, ContactInvitation } from '../sections/Contact'
+import { Frame, IllustrativeNote } from '../sections/primitives'
 
-// The content of each canvas region. Copy is carried over unchanged from the former Home, Work, About
-// and Contact pages. Each region's main heading carries id `region-<id>-title` and tabIndex -1, so
-// SiteCanvas can label the region and move focus to it on navigation.
+// The contents of each section frame on the canvas. Each section sits on the board as a frame of its own
+// and holds named frames for its parts, as in a design tool. Every section's main heading carries
+// id `region-<id>-title` and tabIndex -1 so SiteCanvas can label the frame and move focus to it.
 
-const SYSTEM_TOPICS = [
-  'Reusable components',
-  'Typography & color foundations',
-  'Component states & interaction patterns',
-  'Cross-platform consistency',
-  'Design documentation',
-]
+function Heading({ id, title, children }) {
+  return (
+    <header className="rg-head">
+      <h2 className="rg-head__title" id={`region-${id}-title`} tabIndex={-1}>{title}</h2>
+      {children && <div className="rg-head__intro">{children}</div>}
+    </header>
+  )
+}
 
-export function HomeRegion() {
+export function HomeRegion({ canvas }) {
+  return (
+    <div className="rg-home">
+      <div className="rg-home__statement" data-layer="home-intro"><OpeningStatement /></div>
+      <Frame layer="home-featured" name="Featured work" className="rg-home__featured"><FeaturedWork eager={canvas} /></Frame>
+      <Frame layer="home-facts" name="Profile facts" className="rg-home__facts"><ProfileFacts /></Frame>
+    </div>
+  )
+}
+
+export function ApproachRegion() {
+  const layers = ['understand', 'structure', 'design', 'refine']
   return (
     <>
-      <header className="intro" data-layer="home-intro">
-        <h1 className="page-title" id="region-home-title" tabIndex={-1}>Hi, I’m Althea.</h1>
-        <p>
-          I’m a UI/UX designer focused on creating <mark>intuitive, accessible, and scalable</mark> digital
-          products.
-        </p>
-        <p>
-          I work across <mark>research, interaction design, and visual systems</mark> to turn complex requirements
-          into clear user experiences. Currently a UI/UX Designer at <mark>Traxion Tech, Inc.</mark>
-        </p>
-        <div className="btn-row">
-          <Link to="/work" className="btn">See my work <ArrowRight size={14} /></Link>
-          <Link to="/contact" className="btn btn--ghost">Get in touch</Link>
-        </div>
-      </header>
+      <Heading id="approach" title="How I approach design" />
+      <ol className="rg-process">
+        {approach.map((s, i) => (
+          <li key={s.title}>
+            <Frame layer={`approach-${layers[i]}`} name={`${String(i + 1).padStart(2, '0')} ${s.title}`} className="rg-step">
+              <h3 className="ar-process__title">{s.title}</h3>
+              <p className="ar-process__desc">{s.description}</p>
+              <figure className="ar-process__artifact">
+                <div aria-hidden="true">{ARTIFACTS[i].el}</div>
+                <figcaption className="meta-label">{ARTIFACTS[i].caption}</figcaption>
+              </figure>
+            </Frame>
+          </li>
+        ))}
+      </ol>
+      <IllustrativeNote>Artifacts are illustrative drawings of each stage’s output, not research from a specific project.</IllustrativeNote>
+    </>
+  )
+}
 
-      <section className="section" aria-labelledby="approach-title" data-layer="home-approach">
-        <h2 id="approach-title" className="section-title">How I approach design</h2>
-        <ol className="steps">
-          {approach.map((s, i) => (
-            <li key={s.title} className="step">
-              <span className="step__num">{String(i + 1).padStart(2, '0')}</span>
-              <h3 className="step__title">{s.title}</h3>
-              <p className="step__desc">{s.description}</p>
-            </li>
-          ))}
-        </ol>
-      </section>
-
-      <section className="section" aria-labelledby="systems-title" data-layer="home-system">
-        <h2 id="systems-title" className="section-title">Consistency starts with a system</h2>
-        <p className="body-text">
-          I help create scalable interface systems that make digital products more consistent, maintainable, and
-          easier to evolve. At Traxion Tech, I initiated and helped establish a design system used across{' '}
-          <mark>web applications, mobile applications, and cash teller machine interfaces</mark>.
+export function SystemRegion() {
+  return (
+    <>
+      <Heading id="system" title="Consistency starts with a system">
+        <p>
+          I help create scalable interface systems that make digital products more consistent, maintainable, and easier
+          to evolve. At Traxion Tech, I initiated and helped establish a design system used across web applications,
+          mobile applications, and cash teller machine interfaces.
         </p>
-        <ul className="chips chips--loose">
-          {SYSTEM_TOPICS.map((t) => <li key={t} className="chip">{t}</li>)}
-        </ul>
-      </section>
+      </Heading>
+      <Frame layer="system-contribution" name="My contribution" className="rg-system__contrib"><Contribution /></Frame>
+      <div className="rg-system__grid">
+        <Frame layer="system-foundations" name="A · Foundations" className="specimen rg-system__found"><Foundations /></Frame>
+        <Frame layer="system-library" name="B · Component library" className="specimen rg-system__lib"><ComponentLibrary /></Frame>
+        <Frame layer="system-platforms" name="D · Cross-platform applications" className="specimen rg-system__plat"><Platforms /></Frame>
+        <Frame layer="system-states" name="C · Interaction states" className="specimen rg-system__states"><InteractionStates /></Frame>
+        <Frame layer="system-tokens" name="E · Design tokens" className="specimen rg-system__tokens"><Tokens /></Frame>
+      </div>
+      <IllustrativeNote>Specimen built for this portfolio to show the structure of the work. The production system is client work and stays private.</IllustrativeNote>
     </>
   )
 }
@@ -70,160 +86,117 @@ const frames = FRAMES.map((f) => ({
   ...f,
   cards: f.cards.map((c) => ({ ...c, project: getProject(c.slug), index: cardIndex++ })),
 }))
+const years = projects.flatMap((p) => p.year.match(/\d{4}/g) ?? []).map(Number)
+const span = `${Math.min(...years)} — ${projects.some((p) => /present/i.test(p.year)) ? 'Present' : Math.max(...years)}`
 
+// Filters fade what doesn't match so the arrangement stays put on the board (on phones they hide it).
 export function WorkRegion({ canvas, editor, selected, onOpen }) {
+  const [filterId, setFilterId] = useState('all')
+  const filter = CATALOGUE_FILTERS.find((f) => f.id === filterId)
+  const count = projects.filter(filter.test).length
+
   return (
     <>
-      <header className="intro ws-work__intro">
-        <h2 className="page-title" id="region-work-title" tabIndex={-1}>Selected work</h2>
-        <p>
-          Digital products, mobile apps, and web experiences across <mark>animal welfare, service marketplaces,
-          social platforms, fintech, and events</mark>.
-        </p>
+      <header className="rg-head rg-work__head">
+        <h2 className="rg-head__title" id="region-work-title" tabIndex={-1}>An archive of digital products, interfaces, and experiences.</h2>
+        <div className="rg-head__intro">
+          <p>Exploring product design across mobile applications, responsive websites, fintech platforms, and digital experiences.</p>
+        </div>
+        <div className="rg-work__index" data-pan-ignore>
+          <p className="rg-work__tally">
+            <span><b>{String(projects.length).padStart(2, '0')}</b> projects</span>
+            <span><b>{span}</b></span>
+          </p>
+          <div className="ar-filters" role="group" aria-label="Filter projects by type">
+            {CATALOGUE_FILTERS.map((f) => (
+              <button key={f.id} type="button" className="ar-filter" aria-pressed={filterId === f.id} onClick={() => setFilterId(f.id)}>
+                {f.label}
+                <span className="ar-filter__count">{projects.filter(f.test).length}</span>
+              </button>
+            ))}
+          </div>
+          <p className="visually-hidden" aria-live="polite">
+            {filterId === 'all' ? `Showing all ${count} projects` : `${count} ${count === 1 ? 'project' : 'projects'} in ${filter.label}`}
+          </p>
+        </div>
       </header>
 
-      {frames.map((f) => (
-        <section
-          key={f.id}
-          className="ws-frame"
-          data-layer={`frame-${f.id}`}
-          aria-labelledby={`ws-frame-${f.id}`}
-          style={{ '--x': `${f.x}px`, '--y': `${f.y}px`, '--w': `${f.width}px`, '--h': `${f.height}px` }}
-        >
-          <h3 className="ws-frame__label" id={`ws-frame-${f.id}`}>
-            {f.label}
-            <span className="ws-frame__count">{String(f.cards.length).padStart(2, '0')}</span>
-          </h3>
-          <ul className="ws-frame__cards">
-            {f.cards.map(({ project, index, ...layout }) => (
-              <ProjectCard
-                key={project.slug}
-                project={project}
-                {...layout}
-                index={index}
-                canvas={canvas}
-                selectFirst={editor && selected !== `project-${project.slug}`}
-                onOpen={onOpen}
-              />
-            ))}
-          </ul>
-        </section>
-      ))}
+      <div className="rg-work__board" style={{ '--h': `${FRAMES_HEIGHT}px` }}>
+        {frames.map((f) => (
+          <section
+            key={f.id}
+            className="ws-frame"
+            data-layer={`frame-${f.id}`}
+            aria-labelledby={`ws-frame-${f.id}`}
+            style={{ '--x': `${f.x}px`, '--y': `${f.y}px`, '--w': `${f.width}px`, '--h': `${f.height}px` }}
+          >
+            <h3 className="ws-frame__label" id={`ws-frame-${f.id}`}>
+              {f.label}
+              <span className="ws-frame__count">{String(f.cards.length).padStart(2, '0')}</span>
+            </h3>
+            <ul className="ws-frame__cards">
+              {f.cards.map(({ project, index, ...layout }) => (
+                <ProjectCard
+                  key={project.slug}
+                  project={project}
+                  {...layout}
+                  index={index}
+                  canvas={canvas}
+                  dimmed={!filter.test(project)}
+                  selectFirst={editor && selected !== `project-${project.slug}`}
+                  onOpen={onOpen}
+                />
+              ))}
+            </ul>
+          </section>
+        ))}
 
-      {canvas && (
-        <aside className="ws-note" style={{ '--x': `${NOTE.x}px`, '--y': `${NOTE.y}px`, '--w': `${NOTE.width}px` }}>
-          <p className="ws-note__label">Reading the board</p>
-          <p>Case studies for products sit on the left; landing pages and web work on the right. Select any project to open it.</p>
-        </aside>
-      )}
+        {canvas && (
+          <aside className="ws-note" style={{ '--x': `${NOTE.x}px`, '--y': `${NOTE.y}px`, '--w': `${NOTE.width}px` }}>
+            <p className="ws-note__label">Reading the board</p>
+            <p>Case studies for products sit on the left; landing pages and web work on the right. Select a project, then select it again (or double-click) to open it.</p>
+          </aside>
+        )}
+      </div>
     </>
   )
 }
 
 export function AboutRegion() {
   return (
-    <div className="ws-about">
-      <div className="ws-about__main">
-        <header className="intro" data-layer="about-intro">
-          <h2 className="page-title" id="region-about-title" tabIndex={-1}>About me</h2>
-          <p>
-            I’m a UI/UX designer who enjoys turning ideas and complex requirements into <mark>clear, useful digital
-            experiences</mark>.
-          </p>
-          <p>
-            My work spans different industries and product types, from financial applications to service platforms and
-            community-focused experiences. I value <mark>thoughtful structure, consistent design systems</mark>, and
-            interfaces that make everyday interactions easier.
-          </p>
-          <p>
-            Most of my work happens alongside developers, business analysts, and stakeholders in Agile teams, where good
-            design means decisions that hold up in implementation.
-          </p>
-          <Link to="/work" className="text-link text-link--arrow">See my work <ArrowRight size={14} /></Link>
-        </header>
-
-        <section className="section" aria-labelledby="skills-title" data-layer="about-skills">
-          <h3 id="skills-title" className="section-title">Skills & capabilities</h3>
-          <div className="skill-groups">
-            {skills.map((s) => (
-              <div key={s.group} className="skill-group">
-                <h4 className="skill-group__title">{s.group}</h4>
-                <ul className="chips chips--loose">
-                  {s.items.map((item) => <li key={item} className="chip">{item}</li>)}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="section" aria-labelledby="edu-title" data-layer="about-education">
-          <h3 id="edu-title" className="section-title">Education</h3>
-          <div className="edu">
-            <p className="edu__degree">{education.degree}</p>
-            <p className="edu__school">{education.school}</p>
-          </div>
-        </section>
+    <>
+      <Heading id="about" title="About me" />
+      <div className="rg-about">
+        <Frame layer="about-intro" name="About me" className="rg-about__intro"><AboutIntro /></Frame>
+        <Frame layer="about-experience" name="Experience" className="rg-about__exp"><ExperienceTimeline /></Frame>
       </div>
-
-      <section className="ws-about__side" aria-labelledby="exp-title" data-layer="about-experience">
-        <h3 id="exp-title" className="section-title">Experience</h3>
-        <ol className="timeline">
-          {experience.map((job) => (
-            <li key={job.company + job.role} className="timeline__item">
-              <p className="timeline__period">{job.period}</p>
-              <h4 className="timeline__role">{job.role}</h4>
-              <p className="timeline__company">{job.company}</p>
-              <ul className="timeline__points">
-                {job.points.map((pt) => <li key={pt}>{pt}</li>)}
-              </ul>
-            </li>
-          ))}
-        </ol>
-      </section>
-    </div>
+    </>
   )
 }
 
-// No form on purpose: there is no submission backend configured, and a form that pretends to send
-// would be worse than a direct email link.
-export function ContactRegion() {
+export function SkillsRegion() {
   return (
     <>
-      <header className="intro" data-layer="contact-intro">
-        <h2 className="page-title" id="region-contact-title" tabIndex={-1}>Contact me</h2>
-        <p>
-          I’m always open to meaningful conversations, collaborations, and opportunities to create better digital
-          experiences. <mark>Email is the quickest way</mark> to reach me.
-        </p>
-        <p className="status"><span className="status__dot" aria-hidden="true" />Open to opportunities</p>
-      </header>
-
-      <section className="contact-panel" aria-label="Contact details" data-layer="contact-details">
-        <a className="contact-panel__email" href={`mailto:${site.email}`}>{site.email}</a>
-        <div className="btn-row">
-          <a className="btn" href={`mailto:${site.email}?subject=Hello%20Althea`}>
-            Write an email <ArrowRight size={14} />
-          </a>
-          <CopyEmail />
-        </div>
-      </section>
-
-      <ul className="link-list" data-layer="contact-links">
-        <li>
-          <a href={`mailto:${site.email}`} className="link-list__item">
-            <MailIcon size={18} />
-            <span><strong>Email</strong>{site.email}</span>
-          </a>
-        </li>
-        <li>
-          <a href={site.linkedin} target="_blank" rel="noopener noreferrer" className="link-list__item">
-            <LinkedInIcon size={18} />
-            <span><strong>LinkedIn</strong>linkedin.com/in/althearito</span>
-            <ArrowUpRight size={14} className="link-list__ext" />
-            <span className="visually-hidden"> (opens in a new tab)</span>
-          </a>
-        </li>
-      </ul>
+      <Heading id="skills" title="Skills & capabilities" />
+      <Frame layer="skills-sheet" name="Specification sheet"><CapabilitySheet /></Frame>
     </>
+  )
+}
+
+export function EducationRegion() {
+  return (
+    <>
+      <Heading id="education" title="Education" />
+      <Frame layer="education-credential" name="Credential"><Credential /></Frame>
+    </>
+  )
+}
+
+export function ContactRegion() {
+  return (
+    <div className="rg-contact">
+      <div data-layer="contact-invitation"><ContactInvitation /></div>
+      <Frame layer="contact-details" name="Details"><ContactDetails /></Frame>
+    </div>
   )
 }

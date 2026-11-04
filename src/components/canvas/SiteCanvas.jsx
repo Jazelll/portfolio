@@ -1,13 +1,25 @@
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate, useNavigationType } from 'react-router-dom'
-import { REGIONS, regionForPath } from '../../data/canvas'
+import { LAYOUT, REGIONS, STICKY_NOTES, regionForPath } from '../../data/canvas'
 import usePageMeta from '../usePageMeta'
 import { HERO_TRANSITION } from '../TransitionLink'
 import usePan from './usePan'
-import { AboutRegion, ContactRegion, HomeRegion, WorkRegion } from './regions'
+import {
+  AboutRegion,
+  ApproachRegion,
+  ContactRegion,
+  EducationRegion,
+  HomeRegion,
+  SkillsRegion,
+  SystemRegion,
+  WorkRegion,
+} from './regions'
 import { Inspector, LayersPanel, Toolbar } from './editor'
+import { CanvasCursor, StickyNote } from './collab'
+import ThemeToggle from '../ThemeToggle'
 
-// The whole site as one board. `/`, `/work`, `/about` and `/contact` are regions on it: visiting a route
+// Canvas view: the site as one board. `/canvas`, `/canvas/work`, `/canvas/about` and `/canvas/contact`
+// are regions on it: visiting a route
 // glides the board to its region, and dragging into another region updates the URL (and so the nav).
 //
 //  - ≥1024px: design-tool editor: toolbar, Pages + Layers panel, inspector, selection and zoom.
@@ -16,7 +28,7 @@ import { Inspector, LayersPanel, Toolbar } from './editor'
 
 const CANVAS_QUERY = '(min-width: 768px)'
 const EDITOR_QUERY = '(min-width: 1024px)'
-const STORAGE_KEY = 'canvas:v3'
+const STORAGE_KEY = 'canvas:v4'
 const UI_KEY = 'editor:ui'
 const BAR_INSET = { top: 64, left: 0 } // tablet: room kept clear of the floating bar
 const NO_INSET = { top: 0, left: 0 }
@@ -24,7 +36,11 @@ const BOARD_PAD = 80
 
 const META = {
   home: {},
-  work: { title: 'Work', description: 'Product design, mobile, web, and landing page projects by UI/UX designer Althea Rito.' },
+  work: { title: 'Selected work', description: 'Product design, mobile, web, and landing page projects by UI/UX designer Althea Rito.' },
+  approach: { title: 'Approach', description: 'How UI/UX designer Althea Rito approaches design: understand, structure, design, refine.' },
+  system: { title: 'Design system', description: 'Design systems work by UI/UX designer Althea Rito: foundations, components, states and tokens.' },
+  skills: { title: 'Skills', description: 'Skills and capabilities of UI/UX designer Althea Rito.' },
+  education: { title: 'Education', description: 'Education of UI/UX designer Althea Rito.' },
   about: { title: 'About', description: 'Background, experience, skills, and education of UI/UX designer Althea Rito.' },
   contact: { title: 'Contact', description: 'Get in touch with UI/UX designer Althea Rito by email or LinkedIn.' },
 }
@@ -77,13 +93,49 @@ function useFullscreen(ref) {
   return { active, supported, toggle }
 }
 
-const CONTENT = { home: HomeRegion, work: WorkRegion, about: AboutRegion, contact: ContactRegion }
-
-// Rough size before the regions are measured; generous so the first clamp never cuts content off.
-const ESTIMATED_BOARD = {
-  width: Math.max(...REGIONS.map((r) => r.x + r.width)) + BOARD_PAD,
-  height: 2400,
+const CONTENT = {
+  home: HomeRegion,
+  work: WorkRegion,
+  approach: ApproachRegion,
+  system: SystemRegion,
+  about: AboutRegion,
+  skills: SkillsRegion,
+  education: EducationRegion,
+  contact: ContactRegion,
 }
+
+const ROWS = REGIONS.reduce((rows, r) => {
+  ;(rows[r.row] ??= []).push(r)
+  return rows
+}, [])
+
+// Frames flow left to right within a row; each row starts below the tallest frame of the one above.
+function layoutFrames(heights) {
+  const pos = {}
+  let y = LAYOUT.originY
+  let width = 0
+  ROWS.forEach((row) => {
+    let x = LAYOUT.originX
+    row.forEach((r) => {
+      pos[r.id] = { x, y }
+      x += r.width + LAYOUT.colGap
+    })
+    width = Math.max(width, x - LAYOUT.colGap)
+    y += Math.max(...row.map((r) => heights[r.id])) + LAYOUT.rowGap
+  })
+  return { pos, heights, board: { width: width + BOARD_PAD, height: y - LAYOUT.rowGap + BOARD_PAD } }
+}
+
+// A sticky note's board position from the frame it's anchored to.
+function notePosition(note, { pos, heights }) {
+  const frame = REGIONS.find((r) => r.id === note.region)
+  const { x, y } = pos[note.region]
+  if (note.anchor === 'right') return { x: x + frame.width + note.dx, y: y + (note.dy ?? 0) }
+  return { x: x + note.dx, y: y + heights[note.region] + 36 }
+}
+
+// First paint uses estimated heights; the real ones replace them before anything is shown.
+const ESTIMATED = layoutFrames(Object.fromEntries(REGIONS.map((r) => [r.id, r.height ?? r.est])))
 
 export default function SiteCanvas() {
   const location = useLocation()
@@ -98,7 +150,10 @@ export default function SiteCanvas() {
   const hintId = useId()
   const fullscreen = useFullscreen(rootRef)
   const [stored] = useState(readStored)
-  const [board, setBoard] = useState(ESTIMATED_BOARD)
+  const [layout, setLayout] = useState(ESTIMATED)
+  const [measured, setMeasured] = useState(false)
+  const { board, pos: framePos } = layout
+  const interacted = useRef(false)
   const [zoom, setZoom] = useState(Math.round((stored.pan?.s ?? 1) * 100))
   const [selected, setSelected] = useState(null)
   const [selRect, setSelRect] = useState(null)
@@ -179,29 +234,39 @@ export default function SiteCanvas() {
     onZoom,
   })
 
-  // Size the board to its content; regions grow when web fonts arrive.
+  // Lay the frames out from their measured heights; frames grow when web fonts and images arrive.
   useLayoutEffect(() => {
     if (!canvas) return undefined
     const measure = () => {
-      const els = [...boardRef.current.querySelectorAll('[data-region]')]
-      setBoard({
-        width: Math.max(...els.map((el) => el.offsetLeft + el.offsetWidth)) + BOARD_PAD,
-        height: Math.max(...els.map((el) => el.offsetTop + el.offsetHeight)) + BOARD_PAD,
-      })
+      const heights = Object.fromEntries(REGIONS.map((r) => [r.id, regionEl(r.id)?.offsetHeight ?? r.est]))
+      const next = layoutFrames(heights)
+      setLayout((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next))
+      setMeasured(true)
     }
     measure()
     const ro = new ResizeObserver(measure)
     boardRef.current.querySelectorAll('[data-region]').forEach((el) => ro.observe(el))
     return () => ro.disconnect()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [canvas])
 
+  // Until the visitor moves the board themselves, keep the current frame in place as the layout settles.
+  useLayoutEffect(() => {
+    if (!canvas || !measured || interacted.current || restoring) return
+    const el = regionEl(region.id)
+    if (el) panToRect(rectOf(el), { instant: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layout])
+
   // Route -> board position. First run jumps (or keeps the restored spot); later runs glide and move focus.
+  // Waits for the measured layout: saved positions refer to it, not to the first-paint estimate.
   const placed = useRef(false)
   useLayoutEffect(() => {
     if (!canvas) {
       placed.current = false
       return
     }
+    if (!measured) return
     const el = regionEl(region.id)
     if (!placed.current) {
       placed.current = true
@@ -215,7 +280,7 @@ export default function SiteCanvas() {
     panToRect(rectOf(el))
     focusQuietly(el.querySelector('[tabindex="-1"]'))
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [location.pathname, canvas])
+  }, [location.pathname, canvas, measured])
 
   // Phones: routes scroll the stacked page to their region.
   const scrolled = useRef(false)
@@ -231,6 +296,31 @@ export default function SiteCanvas() {
     else regionEl(region.id)?.scrollIntoView({ behavior, block: 'start' })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [location.pathname, canvas])
+
+  // Phones: the URL (and so the menu) follows the section being read.
+  useEffect(() => {
+    if (canvas) return undefined
+    let frame = 0
+    const update = () => {
+      frame = 0
+      const line = window.innerHeight * 0.35
+      let current = REGIONS[0]
+      for (const r of REGIONS) {
+        const el = regionEl(r.id)
+        if (el && el.getBoundingClientRect().top <= line) current = r
+      }
+      if (current.id !== regionRef.current) navigate(current.path, { replace: true, state: { panned: true } })
+    }
+    const onScroll = () => {
+      if (!frame) frame = requestAnimationFrame(update)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('scroll', onScroll)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [canvas])
 
   /* ---------- Selection (editor) ---------- */
 
@@ -312,7 +402,6 @@ export default function SiteCanvas() {
     return () => clearTimeout(t)
   }, [stored.last, nameHero])
 
-  const number = (r) => String(REGIONS.indexOf(r) + 1).padStart(2, '0')
   const showPanels = editor && !uiHidden
 
   return (
@@ -336,6 +425,7 @@ export default function SiteCanvas() {
       {canvas && !editor && (
         <div className="ws-bar">
           <div className="ws-bar__actions">
+            <ThemeToggle className="ws-bar__btn ws-bar__btn--icon" />
             <button type="button" className="ws-bar__btn" onClick={() => panToRect(rectOf(regionEl(region.id)))}>
               Recenter
             </button>
@@ -355,7 +445,12 @@ export default function SiteCanvas() {
         aria-label={canvas ? 'Site canvas' : undefined}
         aria-describedby={canvas ? hintId : undefined}
         tabIndex={canvas ? 0 : undefined}
-        onKeyDown={onViewportKeyDown}
+        onKeyDown={(e) => {
+          interacted.current = true
+          onViewportKeyDown(e)
+        }}
+        onPointerDown={() => { interacted.current = true }}
+        onWheel={() => { interacted.current = true }}
       >
         {canvas && (
           <p className="visually-hidden" id={hintId}>
@@ -381,15 +476,15 @@ export default function SiteCanvas() {
                 data-layer={`region-${r.id}`}
                 aria-labelledby={`region-${r.id}-title`}
                 style={{
-                  '--x': `${r.x}px`,
-                  '--y': `${r.y}px`,
+                  '--x': `${framePos[r.id].x}px`,
+                  '--y': `${framePos[r.id].y}px`,
                   '--w': `${r.width}px`,
                   '--h': r.height ? `${r.height}px` : 'auto',
                   '--i': i,
                 }}
               >
                 <p className="ws-region__label" aria-hidden="true">
-                  <span className="ws-region__num">{number(r)}</span>
+                  <span className="ws-region__num">{r.number}</span>
                   {r.label}
                 </p>
                 <div className="ws-region__body">
@@ -398,6 +493,8 @@ export default function SiteCanvas() {
               </section>
             )
           })}
+
+          {canvas && STICKY_NOTES.map((n) => <StickyNote key={n.id} {...n} {...notePosition(n, layout)} />)}
 
           {editor && hoverRect && (
             <div className="ws-outline ws-outline--hover" style={rectStyle(hoverRect)} aria-hidden="true" />
@@ -414,6 +511,7 @@ export default function SiteCanvas() {
             </div>
           )}
         </div>
+        {canvas && <CanvasCursor viewportRef={viewportRef} />}
       </div>
 
       {showPanels && <Inspector selectedId={selected} rect={selRect} onOpenProject={openProject} onClear={() => setSelected(null)} />}

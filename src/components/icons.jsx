@@ -30,6 +30,14 @@ export const WorkIcon = (p) => (
     <path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18" />
   </Icon>
 )
+export const CanvasIcon = (p) => (
+  <Icon {...p}>
+    <rect x="3" y="3" width="8" height="10" rx="1.5" />
+    <rect x="13" y="3" width="8" height="6" rx="1.5" />
+    <rect x="13" y="11" width="8" height="10" rx="1.5" />
+    <rect x="3" y="15" width="8" height="6" rx="1.5" />
+  </Icon>
+)
 export const MailIcon = (p) => (
   <Icon {...p}>
     <rect x="3" y="5" width="18" height="14" rx="2" />

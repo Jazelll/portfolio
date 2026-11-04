@@ -7,6 +7,7 @@ export const site = {
   linkedin: 'https://linkedin.com/in/althearito',
   github: 'https://github.com/althearito',
   available: true,
+  location: 'Philippines', // confirmed by Althea
   description:
     'Althea Rito is a UI/UX designer creating intuitive, accessible, and scalable digital products across fintech, service marketplaces, social platforms, and animal welfare.',
 }
@@ -72,4 +73,35 @@ export const approach = [
   { title: 'Structure', description: 'Defining information architecture, user flows, and interaction patterns.' },
   { title: 'Design', description: 'Creating wireframes, interfaces, prototypes, and reusable components.' },
   { title: 'Refine', description: 'Validating decisions, improving usability, and collaborating with developers.' },
+]
+
+// ---------- Editorial archive copy ----------
+// Headline and intro were proposed in the redesign brief and reflect the existing About copy; every
+// fact below is taken from this file, projects.js, or details Althea confirmed (location, Scrum).
+
+export const intro = {
+  headline: 'Designing digital experiences with clarity, structure, and purpose.',
+  lede:
+    'I’m a UI/UX designer working across product design, responsive interfaces, and design systems. I turn complex requirements into clear, accessible, and useful digital experiences.',
+}
+
+export const profileFacts = [
+  ['Discipline', 'Product & UI/UX Design'],
+  ['Specialization', 'Web / Mobile / Design Systems'],
+  ['Experience', 'UI/UX Designer, Traxion Tech · Sep 2025 – Present'],
+  ['Location', 'Philippines'],
+  ['Status', 'Open to opportunities'],
+]
+
+// From the About copy: the kinds of products Althea has worked on.
+export const areasOfWork = ['Financial applications', 'Service platforms', 'Community-focused experiences']
+
+// Specification sheet. Items come from `skills`, the design-system topics, project roles and process
+// steps; Scrum was confirmed separately. No proficiency levels are claimed.
+export const capabilities = [
+  { group: 'Product design', items: ['User research', 'Persona creation', 'User flows', 'Information architecture', 'Wireframing', 'Prototyping', 'Usability testing'] },
+  { group: 'Interface design', items: ['Interface design', 'Responsive design', 'Visual hierarchy', 'Interaction design', 'Accessibility', 'Typography'] },
+  { group: 'Design systems', items: ['Reusable components', 'Typography & color foundations', 'Component states', 'Cross-platform consistency', 'Design documentation'] },
+  { group: 'Tools', items: ['Figma', 'FigJam', 'Adobe XD', 'Canva', 'Notion', 'GitHub', 'WordPress'] },
+  { group: 'Collaboration', items: ['Agile', 'Scrum', 'Developer handoff', 'Stakeholder collaboration'] },
 ]

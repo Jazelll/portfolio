@@ -42,13 +42,13 @@
 /* Abstract photo tile */
 .photo { display: block; position: relative; overflow: hidden; border-radius: 0.6cqw; }
 .photo svg { position: absolute; inset: 0; width: 100%; height: 100%; }
-.photo--clay { background: #d4d4d4; }
+.photo--clay { background: var(--c-photo-1); }
 .photo--clay .photo__hill { fill: var(--c-clay); }
 .photo--clay .photo__sun { fill: #f5f5f5; }
-.photo--sage { background: #e5e5e5; }
+.photo--sage { background: var(--c-photo-2); }
 .photo--sage .photo__hill { fill: var(--c-sage); }
 .photo--sage .photo__sun { fill: #fafafa; }
-.photo--sand { background: #ececec; }
+.photo--sand { background: var(--c-photo-3); }
 .photo--sand .photo__hill { fill: var(--c-sand); }
 .photo--sand .photo__sun { fill: var(--c-clay); }
 
@@ -210,8 +210,3 @@
 }
 .fin-teller__grid span:first-child { background: var(--c-clay); border-color: var(--c-clay); color: var(--c-on-ink); }
 
-@media (prefers-color-scheme: dark) {
-  .photo--clay { background: #3a3a42; }
-  .photo--sage { background: #2f2f35; }
-  .photo--sand { background: #34343a; }
-}
