@@ -122,6 +122,13 @@
 .pageview__url { margin-left: 10px; font-size: 11px; color: var(--c-muted); }
 .pageview__viewport { position: relative; max-height: min(120vw, 720px); overflow: hidden; }
 .pageview__viewport::after {
+  content: '';
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 140px;
+  background: linear-gradient(to bottom, transparent, var(--c-bg));
+  pointer-events: none;
+}
 .pageview.is-expanded .pageview__viewport { max-height: none; }
 .pageview.is-expanded .pageview__viewport::after { display: none; }
 .pageview__viewport img { width: 100%; }
