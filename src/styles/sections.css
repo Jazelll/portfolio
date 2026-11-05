@@ -53,27 +53,6 @@
 .ar-intro__headline { font-size: var(--t-display); font-weight: 600; letter-spacing: -0.045em; line-height: 0.98; outline: none; }
 .ar-intro__lede { max-width: 34rem; margin: var(--s-6) 0; font-size: var(--t-body-lg); line-height: 1.65; color: var(--c-muted); }
 
-.ar-intro__figure { position: relative; margin: var(--s-6) 0 14%; }
-.ar-intro__shot { display: block; color: inherit; text-decoration: none; transition: transform 0.45s var(--ease); }
-.ar-intro__shot:hover { transform: translateY(-4px); }
-.ar-intro__shot--web { width: 86%; margin-left: auto; box-shadow: var(--shadow-frame); }
-.ar-intro__shot--phones {
-  position: absolute;
-  left: 0;
-  bottom: -18%;
-  width: 54%;
-  overflow: hidden;
-  border: 1px solid var(--c-border);
-  border-radius: var(--r-sm);
-  background: var(--c-bg);
-  box-shadow: var(--shadow-frame);
-}
-.ar-note { position: absolute; display: flex; align-items: center; gap: 8px; font-size: var(--t-meta); letter-spacing: 0.04em; color: var(--c-muted); white-space: nowrap; }
-.ar-note b { color: var(--c-ink); font-weight: 600; }
-.ar-note::before { content: ''; width: 28px; height: 1px; background: var(--c-ink); }
-.ar-note--web { top: -26px; left: 14%; }
-.ar-note--phones { right: 0; bottom: -22%; }
-
 .ar-facts .spec__row { grid-template-columns: 1fr; gap: 6px; padding: var(--s-3) 0; }
 .ar-facts .spec__row:first-child { border-top: 0; }
 @container (min-width: 520px) { .ar-facts { grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--grid-gap); } .ar-facts .spec__row { border-top: 0; } }

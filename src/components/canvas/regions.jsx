@@ -7,7 +7,7 @@ import ProjectCard from './ProjectCard'
 import { ARTIFACTS } from '../sections/Approach'
 import { ComponentLibrary, Contribution, Foundations, InteractionStates, Platforms, Tokens } from '../sections/SystemSheet'
 import { AboutIntro, CapabilitySheet, Credential, ExperienceTimeline } from '../sections/Profile'
-import { FeaturedWork, OpeningStatement, ProfileFacts } from '../sections/Intro'
+import { OpeningStatement, ProfileFacts } from '../sections/Intro'
 import { ContactDetails, ContactInvitation } from '../sections/Contact'
 import { Frame, IllustrativeNote } from '../sections/primitives'
 
@@ -24,11 +24,10 @@ function Heading({ id, title, children }) {
   )
 }
 
-export function HomeRegion({ canvas }) {
+export function HomeRegion() {
   return (
     <div className="rg-home">
       <div className="rg-home__statement" data-layer="home-intro"><OpeningStatement /></div>
-      <Frame layer="home-featured" name="Featured work" className="rg-home__featured"><FeaturedWork eager={canvas} /></Frame>
       <Frame layer="home-facts" name="Profile facts" className="rg-home__facts"><ProfileFacts /></Frame>
     </div>
   )

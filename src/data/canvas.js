@@ -93,7 +93,6 @@ export function estimateLayout() {
 export const REGION_LAYERS = {
   home: [
     { id: 'home-intro', name: 'Opening statement', kind: 'group' },
-    { id: 'home-featured', name: 'Featured work', kind: 'frame' },
     { id: 'home-facts', name: 'Profile facts', kind: 'frame' },
   ],
   approach: [
